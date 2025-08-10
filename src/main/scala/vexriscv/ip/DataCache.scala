@@ -304,8 +304,11 @@ case class DataCacheMemBus(p : DataCacheConfig) extends Bundle with IMasterSlave
     axi.sharedCmd.len  := cmdStage.beatCountMinusOne.resized
 
     axi.writeData.arbitrationFrom(dataStage)
-    axi.writeData.data := dataStage.data
-    axi.writeData.strb := dataStage.mask
+    // axi.writeData.data := dataStage.data
+    // axi.writeData.strb := dataStage.mask
+    // see https://github.com/SpinalHDL/VexRiscv/issues/134
+    axi.writeData.data.subdivideIn(32 bits).foreach(_ := dataStage.data )
+    axi.writeData.strb := dataStage.mask.resize(64) |<< (dataStage.address & 0x3F)
     axi.writeData.last := dataStage.last
 
     rsp.valid := axi.r.valid

@@ -6,6 +6,7 @@
 #include "VBriey_RiscvCore.h"
 #endif
 #include "verilated.h"
+#include "verilated_vcd_c.h"
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
@@ -335,79 +336,76 @@ public:
 	}
 };
 
-class Vga : public Display{
-public:
-	VBriey* top;
-	Vga(VBriey* top,int width, int height) : Display(width, height){
-		this->top = top;
-	}
+// class Vga : public Display{
+// public:
+// 	VBriey* top;
+// 	Vga(VBriey* top,int width, int height) : Display(width, height){
+// 		this->top = top;
+// 	}
 
-	virtual ~Vga(){
-	}
+// 	virtual ~Vga(){
+// 	}
 
-	virtual void postCycle(){
+// 	virtual void postCycle(){
 
-	}
+// 	}
 
-	uint32_t lastvSync = 0,lasthSync = 0;
-	virtual void preCycle(){
-		if(!top->io_vga_vSync && lastvSync) {
-			y = 0;
-			refresh();
-		}
-		if(!top->io_vga_hSync && lasthSync && x != 0) {
-			incY();
-			x = 0;
-		}
-		if(top->io_vga_colorEn){
-			this->set((top->io_vga_color_r << 19) + (top->io_vga_color_g << 10) + (top->io_vga_color_b << 3));
-			incX();
-		}
+// 	uint32_t lastvSync = 0,lasthSync = 0;
+// 	virtual void preCycle(){
+// 		if(!top->io_vga_vSync && lastvSync) {
+// 			y = 0;
+// 			refresh();
+// 		}
+// 		if(!top->io_vga_hSync && lasthSync && x != 0) {
+// 			incY();
+// 			x = 0;
+// 		}
+// 		if(top->io_vga_colorEn){
+// 			this->set((top->io_vga_color_r << 19) + (top->io_vga_color_g << 10) + (top->io_vga_color_b << 3));
+// 			incX();
+// 		}
 
-		lastvSync = top->io_vga_vSync;
-		lasthSync = top->io_vga_hSync;
-	}
-};
+// 		lastvSync = top->io_vga_vSync;
+// 		lasthSync = top->io_vga_hSync;
+// 	}
+// };
 
 class BrieyWorkspace : public Workspace<VBriey>{
 public:
 	BrieyWorkspace() : Workspace("Briey"){
 		ClockDomain *axiClk = new ClockDomain(&top->io_axiClk,NULL,20000,100000);
-		ClockDomain *vgaClk = new ClockDomain(&top->io_vgaClk,NULL,40000,100000);
+		// ClockDomain *vgaClk = new ClockDomain(&top->io_vgaClk,NULL,40000,100000);
 		AsyncReset *asyncReset = new AsyncReset(&top->io_asyncReset,50000);
 		Jtag *jtag = new Jtag(&top->io_jtag_tms,&top->io_jtag_tdi,&top->io_jtag_tdo,&top->io_jtag_tck,80000);
-		UartRx *uartRx = new UartRx(&top->io_uart_txd,1.0e12/115200);
-		UartTx *uartTx = new UartTx(&top->io_uart_rxd,1.0e12/115200);
+		// UartRx *uartRx = new UartRx(&top->io_uart_txd,1.0e12/115200);
+		// UartTx *uartTx = new UartTx(&top->io_uart_rxd,1.0e12/115200);
 		timeProcesses.push_back(axiClk);
-		timeProcesses.push_back(vgaClk);
+		// timeProcesses.push_back(vgaClk);
 		timeProcesses.push_back(asyncReset);
 		timeProcesses.push_back(jtag);
-		timeProcesses.push_back(uartRx);
-		timeProcesses.push_back(uartTx);
-        top->io_uart_rxd = 1;
+		// timeProcesses.push_back(uartRx);
 
+		// SdramConfig *sdramConfig = new SdramConfig(
+		// 	2,  //byteCount
+		// 	4,  //bankCount
+		// 	1 << 13, //rowSize
+		// 	1 << 10  //colSize
+		// );
+		// SdramIo *sdramIo = new SdramIo();
+		// sdramIo->BA              = &top->io_sdram_BA             ;
+		// sdramIo->DQM             = &top->io_sdram_DQM            ;
+		// sdramIo->CASn            = &top->io_sdram_CASn           ;
+		// sdramIo->CKE             = &top->io_sdram_CKE            ;
+		// sdramIo->CSn             = &top->io_sdram_CSn            ;
+		// sdramIo->RASn            = &top->io_sdram_RASn           ;
+		// sdramIo->WEn             = &top->io_sdram_WEn            ;
+		// sdramIo->ADDR            = &top->io_sdram_ADDR           ;
+		// sdramIo->DQ_read         = (CData*)&top->io_sdram_DQ_read        ;
+		// sdramIo->DQ_write        = (CData*)&top->io_sdram_DQ_write       ;
+		// sdramIo->DQ_writeEnable = (CData*)&top->io_sdram_DQ_writeEnable;
+		// Sdram *sdram = new Sdram(sdramConfig, sdramIo);
 
-		SdramConfig *sdramConfig = new SdramConfig(
-			2,  //byteCount
-			4,  //bankCount
-			1 << 13, //rowSize
-			1 << 10  //colSize
-		);
-		SdramIo *sdramIo = new SdramIo();
-		sdramIo->BA              = &top->io_sdram_BA             ;
-		sdramIo->DQM             = &top->io_sdram_DQM            ;
-		sdramIo->CASn            = &top->io_sdram_CASn           ;
-		sdramIo->CKE             = &top->io_sdram_CKE            ;
-		sdramIo->CSn             = &top->io_sdram_CSn            ;
-		sdramIo->RASn            = &top->io_sdram_RASn           ;
-		sdramIo->WEn             = &top->io_sdram_WEn            ;
-		sdramIo->ADDR            = &top->io_sdram_ADDR           ;
-		sdramIo->DQ_read         = (CData*)&top->io_sdram_DQ_read        ;
-		sdramIo->DQ_write        = (CData*)&top->io_sdram_DQ_write       ;
-		sdramIo->DQ_writeEnable = (CData*)&top->io_sdram_DQ_writeEnable;
-		Sdram *sdram = new Sdram(sdramConfig, sdramIo);
-
-		axiClk->add(sdram);
+		// axiClk->add(sdram);
 		#ifdef TRACE
 		//speedFactor = 100e-6;
 		//cout << "Simulation caped to " << timeToSec << " of real time"<< endl;
@@ -415,10 +413,10 @@ public:
 
 		axiClk->add(new VexRiscvTracer(top->Briey->axi_core_cpu));
 
-		#ifdef VGA
-		Vga *vga = new Vga(top,640,480);
-		vgaClk->add(vga);
-		#endif
+		// #ifdef VGA
+		// Vga *vga = new Vga(top,640,480);
+		// vgaClk->add(vga);
+		// #endif
 
 		top->io_coreInterrupt = 0;
 	}
