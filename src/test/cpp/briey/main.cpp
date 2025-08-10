@@ -377,11 +377,13 @@ public:
 		AsyncReset *asyncReset = new AsyncReset(&top->io_asyncReset,50000);
 		Jtag *jtag = new Jtag(&top->io_jtag_tms,&top->io_jtag_tdi,&top->io_jtag_tdo,&top->io_jtag_tck,80000);
 		UartRx *uartRx = new UartRx(&top->io_uart_txd,1.0e12/115200);
+		UartTx *uartTx = new UartTx(&top->io_uart_rxd,1.0e12/115200);
 		timeProcesses.push_back(axiClk);
 		timeProcesses.push_back(vgaClk);
 		timeProcesses.push_back(asyncReset);
 		timeProcesses.push_back(jtag);
 		timeProcesses.push_back(uartRx);
+		timeProcesses.push_back(uartTx);
         top->io_uart_rxd = 1;
 
 

@@ -11,7 +11,7 @@ import spinal.lib.bus.amba4.axi._
 import spinal.lib.com.jtag.Jtag
 import spinal.lib.com.jtag.sim.JtagTcp
 import spinal.lib.com.uart.sim.{UartDecoder, UartEncoder}
-import spinal.lib.com.uart.{Apb3UartCtrl, Uart, UartCtrlGenerics, UartCtrlMemoryMappedConfig}
+import spinal.lib.com.uart.{Apb3UartCtrl, Uart, UartCtrlGenerics, UartCtrlMemoryMappedConfig, UartCtrlInitConfig, UartParityType, UartStopType}
 import spinal.lib.graphic.RgbConfig
 import spinal.lib.graphic.vga.{Axi4VgaCtrl, Axi4VgaCtrlGenerics, Vga}
 import spinal.lib.io.TriStateArray
@@ -46,9 +46,17 @@ object BrieyConfig{
           dataWidthMax      = 8,
           clockDividerWidth = 20,
           preSamplingSize   = 1,
-          samplingSize      = 5,
-          postSamplingSize  = 2
+          samplingSize      = 3,
+          postSamplingSize  = 1
         ),
+        initConfig = UartCtrlInitConfig(
+          baudrate = 115200,
+          dataLength = 7,  //7 => 8 bits
+          parity = UartParityType.NONE,
+          stop = UartStopType.ONE
+        ),
+        busCanWriteClockDividerConfig = false,
+        busCanWriteFrameConfig = false,
         txFifoDepth = 16,
         rxFifoDepth = 16
       ),
@@ -100,6 +108,7 @@ object BrieyConfig{
           //              portTlbSize = 6
           //            )
         ),
+        // TODO(jxlin): map CXL to non-cachable memory?
         new StaticMemoryTranslatorPlugin(
           ioRange      = _(31 downto 28) === 0xF
         ),
@@ -192,6 +201,13 @@ class Briey(val config: BrieyConfig) extends Component{
     val vga           = master(Vga(vgaRgbConfig))
     val timerExternal = in(PinsecTimerCtrlExternal())
     val coreInterrupt = in Bool()
+
+    // TODO(jxlin): axi master to external cxl cache
+    // val axi_mm_cxl = master(Axi4Shared(
+    //   addressWidth = 32,
+    //   dataWidth    = 32,
+    //   idWidth      = 4
+    // ))
   }
 
   val resetCtrlClockDomain = ClockDomain(
@@ -314,7 +330,7 @@ class Briey(val config: BrieyConfig) extends Component{
       }
     }
 
-
+    //TODO(jxlin): change the width of xbar? add lines connected to top level IO
     val axiCrossbar = Axi4CrossbarFactory()
 
     axiCrossbar.addSlaves(
@@ -407,7 +423,7 @@ object BrieyWithMemoryInit{
       val toplevel = new Briey(BrieyConfig.default)
       toplevel.axi.vgaCtrl.vga.ctrl.io.error.addAttribute(Verilator.public)
       toplevel.axi.vgaCtrl.vga.ctrl.io.frameStart.addAttribute(Verilator.public)
-      HexTools.initRam(toplevel.axi.ram.ram, "src/main/ressource/hex/muraxDemo.hex", 0x80000000l)
+      HexTools.initRam(toplevel.axi.ram.ram, "src/main/ressource/hex/hello_world.hex", 0x80000000l)
       toplevel
     })
   }
