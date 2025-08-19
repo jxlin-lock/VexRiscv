@@ -110,7 +110,7 @@ object BrieyConfig{
         ),
         // TODO(jxlin): map CXL to non-cachable memory?
         new StaticMemoryTranslatorPlugin(
-          ioRange      = _(31 downto 28) === 0xF
+          ioRange      = _(31 downto 28) >= 0xA
         ),
         new DecoderSimplePlugin(
           catchIllegalInstruction = true
@@ -192,22 +192,8 @@ class Briey(val config: BrieyConfig) extends Component{
 
     //Main components IO
     val jtag       = slave(Jtag())
-    // val sdram      = master(SdramInterface(sdramLayout))
 
-    //Peripherals IO
-    // val gpioA         = master(TriStateArray(32 bits))
-    // val gpioB         = master(TriStateArray(32 bits))
-    // val uart          = master(Uart())
-    // val vga           = master(Vga(vgaRgbConfig))
-    // val timerExternal = in(PinsecTimerCtrlExternal())
     val coreInterrupt = in Bool()
-
-    // TODO(jxlin): axi master to external cxl cache
-    // val axi_mm_cxl = master(Axi4Shared(
-    //   addressWidth = 32,
-    //   dataWidth    = 32,
-    //   idWidth      = 4
-    // ))
   }
 
   val resetCtrlClockDomain = ClockDomain(
@@ -256,6 +242,16 @@ class Briey(val config: BrieyConfig) extends Component{
   // )
 
   val axi = new ClockingArea(axiClockDomain) {
+  
+  // RAM for instructions
+  val CXL_RAM_SIZE = 32 kB // CXL RAM size
+
+  val cxl_ram = Axi4SharedOnChipRam(
+      dataWidth = 512,
+      byteCount = CXL_RAM_SIZE,
+      idWidth = 4
+  )
+
   val ram = Axi4SharedOnChipRam(
       dataWidth = 512,
       byteCount = onChipRamSize,
@@ -267,48 +263,6 @@ class Briey(val config: BrieyConfig) extends Component{
       byteCount = 1 MB,
       idWidth = 4
   )
-
-    // val sdramCtrl = Axi4SharedSdramCtrl(
-    //   axiDataWidth = 32,
-    //   axiIdWidth   = 4,
-    //   layout       = sdramLayout,
-    //   timing       = sdramTimings,
-    //   CAS          = 3
-    // )
-
-
-    // val apbBridge = Axi4SharedToApb3Bridge(
-    //   addressWidth = 20,
-    //   dataWidth    = 32,
-    //   idWidth      = 4
-    // )
-
-    // val gpioACtrl = Apb3Gpio(
-    //   gpioWidth = 32,
-    //   withReadSync = true
-    // )
-    // val gpioBCtrl = Apb3Gpio(
-    //   gpioWidth = 32,
-    //   withReadSync = true
-    // )
-    // val timerCtrl = PinsecTimerCtrl()
-
-
-    // val uartCtrl = Apb3UartCtrl(uartCtrlConfig)
-    // uartCtrl.io.apb.addAttribute(Verilator.public)
-
-
-    // val vgaCtrlConfig = Axi4VgaCtrlGenerics(
-    //   axiAddressWidth = 32,
-    //   axiDataWidth    = 32,
-    //   burstLength     = 8,
-    //   frameSizeMax    = 2048*1512*2,
-    //   fifoSize        = 512,
-    //   rgbConfig       = vgaRgbConfig,
-    //   vgaClock        = vgaClockDomain
-    // )
-    // val vgaCtrl = Axi4VgaCtrl(vgaCtrlConfig)
-
 
 
     val core = new Area{
@@ -340,29 +294,15 @@ class Briey(val config: BrieyConfig) extends Component{
     val axiCrossbar = Axi4CrossbarFactory()
 
     axiCrossbar.addSlaves(
-      reg.io.axi       -> (0xF2000000L,   4 kB),
+      reg.io.axi       -> (0xF0000000L,   4 kB),
+      cxl_ram.io.axi   -> (0xA0000000L,   CXL_RAM_SIZE),
       ram.io.axi       -> (0x80000000L,   onChipRamSize)
     )
-
+    
     axiCrossbar.addConnections(
       core.iBus       -> List(ram.io.axi),
-      core.dBus       -> List(ram.io.axi, reg.io.axi)
+      core.dBus       -> List(ram.io.axi, cxl_ram.io.axi, reg.io.axi)
     )
-
-
-    // axiCrossbar.addPipelining(apbBridge.io.axi)((crossbar,bridge) => {
-    //   crossbar.sharedCmd.halfPipe() >> bridge.sharedCmd
-    //   crossbar.writeData.halfPipe() >> bridge.writeData
-    //   crossbar.writeRsp             << bridge.writeRsp
-    //   crossbar.readRsp              << bridge.readRsp
-    // })
-
-    // axiCrossbar.addPipelining(sdramCtrl.io.axi)((crossbar,ctrl) => {
-    //   crossbar.sharedCmd.halfPipe()  >>  ctrl.sharedCmd
-    //   crossbar.writeData            >/-> ctrl.writeData
-    //   crossbar.writeRsp              <<  ctrl.writeRsp
-    //   crossbar.readRsp               <<  ctrl.readRsp
-    // })
 
     axiCrossbar.addPipelining(ram.io.axi)((crossbar,ctrl) => {
       crossbar.sharedCmd.halfPipe()  >>  ctrl.sharedCmd
