@@ -184,7 +184,7 @@ class Briey(val config: BrieyConfig) extends Component{
   val interruptCount = 4
   def vgaRgbConfig = RgbConfig(5,6,5)
     val CXL_RAM_SIZE = 32 kB // CXL RAM size
-  val axiConfig = Axi4SharedOnChipRam.getAxiConfig(512,CXL_RAM_SIZE,4)
+  val axiConfig = Axi4SharedOnChipRam.getAxiConfig(512,CXL_RAM_SIZE,12)
   val io = new Bundle{
     //Clocks / reset
     val asyncReset = in Bool()
@@ -252,7 +252,7 @@ class Briey(val config: BrieyConfig) extends Component{
   val cxl_ram = Axi4SharedOnChipRam(
       dataWidth = 512,
       byteCount = CXL_RAM_SIZE,
-      idWidth = 4
+      idWidth = 12
   )
 
   val ram = Axi4SharedOnChipRam(

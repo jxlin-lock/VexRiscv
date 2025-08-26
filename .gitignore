@@ -54,3 +54,8 @@ simWorkspace/
 tmp/
 /archive.tar.gz
 *.out32
+
+# cxl build
+src/main/c/murax/cxl_demo/build/
+simulator/*.vcd
+simulator/*.vvp

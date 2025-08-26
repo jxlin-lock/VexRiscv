@@ -39,10 +39,11 @@ void main() {
 	}
 
 	for(int i = 0; i < 10; i++){
-		sum += accumulate[i];
+		// sum += accumulate[i];
+		sum += accumulate[i]^i;
 	}
 
-	int check = (sum == 45) ? 1 : -1;
+	int check = (sum == 0) ? 1 : -1;
 	*ptr_reg1 = sum;
 	*ptr_reg1 = check;
 }
