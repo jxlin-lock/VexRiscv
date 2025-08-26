@@ -183,7 +183,8 @@ class Briey(val config: BrieyConfig) extends Component{
   val debug = true
   val interruptCount = 4
   def vgaRgbConfig = RgbConfig(5,6,5)
-
+    val CXL_RAM_SIZE = 32 kB // CXL RAM size
+  val axiConfig = Axi4SharedOnChipRam.getAxiConfig(512,CXL_RAM_SIZE,4)
   val io = new Bundle{
     //Clocks / reset
     val asyncReset = in Bool()
@@ -194,7 +195,12 @@ class Briey(val config: BrieyConfig) extends Component{
     val jtag       = slave(Jtag())
 
     val coreInterrupt = in Bool()
+    val out_cxl_axi = master(Axi4(axiConfig))
   }
+
+  val cxl_axi_shared = Axi4Shared(axiConfig)
+  io.out_cxl_axi << cxl_axi_shared.toAxi4().toFullConfig()
+
 
   val resetCtrlClockDomain = ClockDomain(
     clock = io.axiClk,
@@ -242,9 +248,6 @@ class Briey(val config: BrieyConfig) extends Component{
   // )
 
   val axi = new ClockingArea(axiClockDomain) {
-  
-  // RAM for instructions
-  val CXL_RAM_SIZE = 32 kB // CXL RAM size
 
   val cxl_ram = Axi4SharedOnChipRam(
       dataWidth = 512,
@@ -295,13 +298,15 @@ class Briey(val config: BrieyConfig) extends Component{
 
     axiCrossbar.addSlaves(
       reg.io.axi       -> (0xF0000000L,   4 kB),
-      cxl_ram.io.axi   -> (0xA0000000L,   CXL_RAM_SIZE),
+      // cxl_ram.io.axi   -> (0xA0000000L,   CXL_RAM_SIZE),
+      cxl_axi_shared   -> (0xA0000000L,   CXL_RAM_SIZE),
       ram.io.axi       -> (0x80000000L,   onChipRamSize)
     )
     
     axiCrossbar.addConnections(
       core.iBus       -> List(ram.io.axi),
-      core.dBus       -> List(ram.io.axi, cxl_ram.io.axi, reg.io.axi)
+      // core.dBus       -> List(ram.io.axi, cxl_ram.io.axi, reg.io.axi)
+      core.dBus       -> List(ram.io.axi, cxl_axi_shared, reg.io.axi)
     )
 
     axiCrossbar.addPipelining(ram.io.axi)((crossbar,ctrl) => {

@@ -1,5 +1,5 @@
 DEBUG?=no
-TRACE?=no
+TRACE?=yes
 PRINT_PERF?=no
 TRACE_START=0
 ADDCFLAGS += -CFLAGS -pthread -LDFLAGS -pthread
