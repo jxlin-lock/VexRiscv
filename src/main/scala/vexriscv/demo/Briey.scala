@@ -185,6 +185,7 @@ class Briey(val config: BrieyConfig) extends Component{
   def vgaRgbConfig = RgbConfig(5,6,5)
     val CXL_RAM_SIZE = 32 kB // CXL RAM size
   val axiConfig = Axi4SharedOnChipRam.getAxiConfig(512,CXL_RAM_SIZE,12)
+  val onchipaxiConfig = Axi4SharedOnChipRam.getAxiConfig(512,onChipRamSize,4)
   val io = new Bundle{
     //Clocks / reset
     val asyncReset = in Bool()
@@ -196,6 +197,9 @@ class Briey(val config: BrieyConfig) extends Component{
 
     val coreInterrupt = in Bool()
     val out_cxl_axi = master(Axi4(axiConfig))
+    val in_ram_io = slave(Axi4Shared(onchipaxiConfig)) // host config on-chip ram to reload program
+    val in_ram_reset = in Bool()
+    val in_enable_ram_reload = in Bool()
   }
 
   val cxl_axi_shared = Axi4Shared(axiConfig)
@@ -248,19 +252,36 @@ class Briey(val config: BrieyConfig) extends Component{
   // )
 
   val axi = new ClockingArea(axiClockDomain) {
-
-  val cxl_ram = Axi4SharedOnChipRam(
-      dataWidth = 512,
-      byteCount = CXL_RAM_SIZE,
-      idWidth = 12
-  )
-
-  val ram = Axi4SharedOnChipRam(
+  val ram_reset = Bool()
+  ram_reset := resetCtrl.systemReset && io.in_ram_reset
+  // create special reset area for ram: only when home ram_reset is set as high, it will be reseted
+  val ram_reset_area = new ResetArea(ram_reset, true) {
+    val ram = Axi4SharedOnChipRam(
       dataWidth = 512,
       byteCount = onChipRamSize,
       idWidth = 4
-  )
+    )
+  }
+  
+  val ram_cond = Bool
+  // ram_cond := False
+  ram_cond := io.in_enable_ram_reload // when ram_cond is true, the ram is controlled by io.in_ram_io, else by cpu
+  val ram_mux_io = io.in_ram_io
+  val ram_mux_cpu = Axi4Shared(onchipaxiConfig)
 
+  val ram_mux_cond = ram_cond.asUInt
+
+  ram_reset_area.ram.io.axi.arw << StreamMux(ram_mux_cond, Seq(ram_mux_cpu.arw, ram_mux_io.arw))
+  ram_reset_area.ram.io.axi.w   << StreamMux(ram_mux_cond, Seq(ram_mux_cpu.w, ram_mux_io.w))
+  val s1 = StreamDemux(ram_reset_area.ram.io.axi.b, ram_mux_cond, 2)
+
+  s1(0) >> ram_mux_cpu.b
+  s1(1) >> ram_mux_io.b
+
+  val s2 = StreamDemux(ram_reset_area.ram.io.axi.r, ram_mux_cond, 2)
+  s2(0) >> ram_mux_cpu.r
+  s2(1) >> ram_mux_io.r
+  
   val reg = Axi4SharedOnChipRam(
       dataWidth = 512,
       byteCount = 1 MB,
@@ -298,18 +319,16 @@ class Briey(val config: BrieyConfig) extends Component{
 
     axiCrossbar.addSlaves(
       reg.io.axi       -> (0xF0000000L,   4 kB),
-      // cxl_ram.io.axi   -> (0xA0000000L,   CXL_RAM_SIZE),
       cxl_axi_shared   -> (0xA0000000L,   CXL_RAM_SIZE),
-      ram.io.axi       -> (0x80000000L,   onChipRamSize)
+      ram_mux_cpu       -> (0x80000000L,   onChipRamSize)
     )
     
     axiCrossbar.addConnections(
-      core.iBus       -> List(ram.io.axi),
-      // core.dBus       -> List(ram.io.axi, cxl_ram.io.axi, reg.io.axi)
-      core.dBus       -> List(ram.io.axi, cxl_axi_shared, reg.io.axi)
+      core.iBus       -> List(ram_mux_cpu),
+      core.dBus       -> List(ram_mux_cpu, cxl_axi_shared, reg.io.axi)
     )
 
-    axiCrossbar.addPipelining(ram.io.axi)((crossbar,ctrl) => {
+    axiCrossbar.addPipelining(ram_mux_cpu)((crossbar,ctrl) => {
       crossbar.sharedCmd.halfPipe()  >>  ctrl.sharedCmd
       crossbar.writeData            >/-> ctrl.writeData
       crossbar.writeRsp              <<  ctrl.writeRsp
@@ -322,11 +341,6 @@ class Briey(val config: BrieyConfig) extends Component{
       crossbar.writeRsp              <<  ctrl.writeRsp
       crossbar.readRsp               <<  ctrl.readRsp
     })
-
-    // axiCrossbar.addPipelining(vgaCtrl.io.axi)((ctrl,crossbar) => {
-    //   ctrl.readCmd.halfPipe()    >>  crossbar.readCmd
-    //   ctrl.readRsp               <<  crossbar.readRsp
-    // })
 
     axiCrossbar.addPipelining(core.dBus)((cpu,crossbar) => {
       cpu.sharedCmd             >>  crossbar.sharedCmd
@@ -379,7 +393,7 @@ object BrieyWithMemoryInit{
       val toplevel = new Briey(BrieyConfig.default)
       // toplevel.axi.vgaCtrl.vga.ctrl.io.error.addAttribute(Verilator.public)
       // toplevel.axi.vgaCtrl.vga.ctrl.io.frameStart.addAttribute(Verilator.public)
-      HexTools.initRam(toplevel.axi.ram.ram, "src/main/ressource/hex/cxl_demo.hex", 0x80000000l)
+      HexTools.initRam(toplevel.axi.ram_reset_area.ram.ram, "src/main/ressource/hex/cxl_demo.hex", 0x80000000l)
       toplevel
     })
   }

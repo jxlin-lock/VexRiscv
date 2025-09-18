@@ -16,16 +16,32 @@ reg                                             write_reg_enabled;
 reg [71:0]                ip2cafu_axisth1_tdata;
 reg ip2cafu_axisth1_tvalid;
 wire cafu2ip_axisth1_tready;
+reg core_soft_reset, program_load_en_;
+reg program_load_ram_reset; //TODO figure out how to do ram reset
+
+reg           program_load_en;
+wire          program_load_aw_valid;
+wire          program_load_aw_ready;
+wire [14:0]   program_load_aw_payload_addr;
+wire          program_load_w_valid;
+wire          program_load_w_ready;
+wire  [511:0] program_load_w_payload_data;
+wire  [63:0]  program_load_w_payload_strb;
+
 initial begin
     $dumpfile("wave.vcd");   // for GTKWave
     $dumpvars(0, riscv_bench);
     clk = 0;
     rst = 1;
+    program_load_ram_reset = 1;
     start = 0;
     ip2cafu_axisth1_tvalid = 0;
+    core_soft_reset = 0;
+    program_load_en = 0;
     
     #100;
     rst = 0;
+    program_load_ram_reset = 0;
 
     #100;
     write_reg_addr = 23'h9000; // dest cxl
@@ -58,7 +74,25 @@ initial begin
     write_reg_enabled = 0;
 
 
-    #800;
+    #8000; // try to reset core
+    rst = 1;
+
+    # 100;
+    // reload program
+    program_load_en = 1;
+
+    # 800;
+    program_load_en = 0;
+
+    #80;
+    program_load_ram_reset = 1;
+
+    # 100;
+    program_load_ram_reset = 0;
+
+    # 80;
+    rst = 0;
+    core_soft_reset = 0;
 
 
 end
@@ -103,6 +137,19 @@ end
         wire                       axi_rready;
 
         localparam ID_WIDTH = 20;
+
+    program_loader program_loader_inst (
+    .clk(clk),
+    .rst(program_load_ram_reset),
+    .program_load_en(program_load_en),
+    .program_load_aw_valid(program_load_aw_valid),
+    .program_load_aw_ready(program_load_aw_ready),
+    .program_load_aw_payload_addr(program_load_aw_payload_addr),
+    .program_load_w_valid(program_load_w_valid),
+    .program_load_w_ready(program_load_w_ready),
+    .program_load_w_payload_data(program_load_w_payload_data),
+    .program_load_w_payload_strb(program_load_w_payload_strb)
+    );
 
     Briey_Wrap #(
     ) briey_inst (
@@ -154,66 +201,19 @@ end
     .rresp                                 (axi_rresp),
     .rlast                                 (axi_rlast),
     .rvalid                                (axi_rvalid),
-    .rready                                (axi_rready)
+    .rready                                (axi_rready),
+
+    // .core_soft_reset(core_soft_reset),
+    .program_load_en(program_load_en),
+    .program_load_aw_valid(program_load_aw_valid),
+    .program_load_aw_ready(program_load_aw_ready),
+    .program_load_aw_payload_addr(program_load_aw_payload_addr),
+    .program_load_w_valid(program_load_w_valid),
+    .program_load_w_ready(program_load_w_ready),
+    .program_load_w_payload_data(program_load_w_payload_data),
+    .program_load_w_payload_strb(program_load_w_payload_strb),
+    .program_load_ram_reset(program_load_ram_reset)
     );
-
-
-    // Briey #()
-    // briey_inst (
-    //     .io_asyncReset (rst),
-    //     .io_axiClk (clk),
-    //     .io_vgaClk (clk),
-    //     .io_jtag_tms (1'b0),
-    //     .io_jtag_tdi (1'b0),
-    //     .io_jtag_tdo (),
-    //     .io_jtag_tck (1'b0),
-        
-    //     .io_coreInterrupt (1'b0),
-
-    //     .io_out_cxl_axi_aw_valid(axi_awvalid),
-    //     .io_out_cxl_axi_aw_ready(axi_awready),
-    //     .io_out_cxl_axi_aw_payload_addr(riscv_axi_awaddr), // RISVcore address range 14bits 
-    //     .io_out_cxl_axi_aw_payload_id(axi_awid),
-    //     .io_out_cxl_axi_aw_payload_len(axi_awlen),
-    //     .io_out_cxl_axi_aw_payload_size(axi_awsize),
-    //     .io_out_cxl_axi_aw_payload_burst(axi_awburst),
-
-    //     .io_out_cxl_axi_w_valid(axi_wvalid),
-    //     .io_out_cxl_axi_w_ready(axi_wready),
-    //     .io_out_cxl_axi_w_payload_data(axi_wdata),
-    //     .io_out_cxl_axi_w_payload_strb(axi_wstrb),
-    //     .io_out_cxl_axi_w_payload_last(axi_wlast),
-    //     .io_out_cxl_axi_b_valid(axi_bvalid),
-    //     .io_out_cxl_axi_b_ready(axi_bready),
-    //     .io_out_cxl_axi_b_payload_id(axi_bid),
-    //     .io_out_cxl_axi_b_payload_resp(axi_bresp),
-
-    //     .io_out_cxl_axi_ar_valid(axi_arvalid),
-    //     .io_out_cxl_axi_ar_ready(axi_arready),
-    //     .io_out_cxl_axi_ar_payload_addr(riscv_axi_araddr),
-    //     .io_out_cxl_axi_ar_payload_id(axi_arid),
-    //     .io_out_cxl_axi_ar_payload_len(axi_arlen),
-    //     .io_out_cxl_axi_ar_payload_size(axi_arsize),
-    //     .io_out_cxl_axi_ar_payload_burst(axi_arburst),
-    //     .io_out_cxl_axi_r_valid(axi_rvalid),
-    //     .io_out_cxl_axi_r_ready(axi_rready),
-    //     .io_out_cxl_axi_r_payload_data(axi_rdata),
-    //     .io_out_cxl_axi_r_payload_id(axi_rid),
-    //     .io_out_cxl_axi_r_payload_resp(axi_rresp),
-    //     .io_out_cxl_axi_r_payload_last(axi_rlast)
-    // );
-
-
-    // assign axi_awaddr = {49'b0, riscv_axi_awaddr}; // byte address
-    // assign axi_araddr = {49'b0, riscv_axi_araddr}; // byte address
-
-    // assign axi_awlock = 1'b0;
-    // assign axi_awcache = 4'b0011;
-    // assign axi_awprot = 3'b000;
-    // assign axi_arlock = 1'b0;
-    // assign axi_arcache = 4'b0011;
-    // assign axi_arprot = 3'b000;
-
 
 
     axi_ram #(
@@ -261,5 +261,118 @@ end
         .s_axi_rvalid(axi_rvalid),
         .s_axi_rready(axi_rready)
     );
+
+endmodule
+
+
+module program_loader(
+    input        clk,
+    input        rst,
+    input        program_load_en,
+    output reg   program_load_aw_valid,
+    input        program_load_aw_ready,
+    output reg [14:0]  program_load_aw_payload_addr,
+    output reg   program_load_w_valid,
+    input        program_load_w_ready,
+    output reg [511:0] program_load_w_payload_data,
+    output reg [63:0]  program_load_w_payload_strb
+);
+  reg [7:0] program_file [0:2047];
+  integer file_handle;
+  initial begin
+    $readmemb("cxl_demo_converted.bin", program_file);
+  end
+
+ reg[19:0] w_load_addr;
+ reg[19:0] aw_load_addr;
+
+always@(posedge clk) begin
+    if (rst) begin
+        w_load_addr <= 0;
+        aw_load_addr <= 0;
+    end 
+    else begin
+        if (program_load_w_valid & program_load_w_ready) begin
+            w_load_addr <= w_load_addr + 64;
+        end
+        if (program_load_aw_valid & program_load_aw_ready) begin
+            aw_load_addr <= aw_load_addr + 64;
+        end
+    end
+end
+
+always_comb begin
+    program_load_aw_valid = (aw_load_addr < 2048) && program_load_en;
+    program_load_aw_payload_addr = aw_load_addr[14:0];
+
+    program_load_w_payload_strb = 64'hFFFFFFFFFFFFFFFF;
+    program_load_w_valid = (w_load_addr < 2048) && program_load_en;
+    program_load_w_payload_data = {program_file[w_load_addr + 63], 
+                                           program_file[w_load_addr + 62],
+                                           program_file[w_load_addr + 61],
+                                           program_file[w_load_addr + 60],
+                                           program_file[w_load_addr + 59],
+                                           program_file[w_load_addr + 58],
+                                           program_file[w_load_addr + 57],
+                                           program_file[w_load_addr + 56],
+                                           program_file[w_load_addr + 55],
+                                           program_file[w_load_addr + 54],
+                                           program_file[w_load_addr + 53],
+                                           program_file[w_load_addr + 52],
+                                           program_file[w_load_addr + 51],
+                                           program_file[w_load_addr + 50],
+                                           program_file[w_load_addr + 49],
+                                           program_file[w_load_addr + 48],
+                                           program_file[w_load_addr + 47],
+                                           program_file[w_load_addr + 46],
+                                           program_file[w_load_addr + 45],
+                                           program_file[w_load_addr + 44],
+                                           program_file[w_load_addr + 43],
+                                           program_file[w_load_addr + 42],
+                                           program_file[w_load_addr + 41],
+                                           program_file[w_load_addr + 40],
+                                           program_file[w_load_addr + 39],
+                                           program_file[w_load_addr + 38],
+                                           program_file[w_load_addr + 37],
+                                           program_file[w_load_addr + 36],
+                                           program_file[w_load_addr + 35],
+                                           program_file[w_load_addr + 34],
+                                           program_file[w_load_addr + 33],
+                                           program_file[w_load_addr + 32],
+                                           program_file[w_load_addr + 31],
+                                           program_file[w_load_addr + 30],
+                                           program_file[w_load_addr + 29],
+                                           program_file[w_load_addr + 28],
+                                           program_file[w_load_addr + 27],
+                                           program_file[w_load_addr + 26],
+                                           program_file[w_load_addr + 25],
+                                           program_file[w_load_addr + 24],
+                                           program_file[w_load_addr + 23],
+                                           program_file[w_load_addr + 22],
+                                           program_file[w_load_addr + 21],
+                                           program_file[w_load_addr + 20],
+                                           program_file[w_load_addr + 19],
+                                           program_file[w_load_addr + 18],
+                                           program_file[w_load_addr + 17],
+                                           program_file[w_load_addr + 16],
+                                           program_file[w_load_addr + 15],
+                                           program_file[w_load_addr + 14],
+                                           program_file[w_load_addr + 13],
+                                           program_file[w_load_addr + 12],
+                                           program_file[w_load_addr + 11],
+                                           program_file[w_load_addr + 10],
+                                           program_file[w_load_addr + 9],
+                                           program_file[w_load_addr + 8],
+                                           program_file[w_load_addr + 7],
+                                           program_file[w_load_addr + 6],
+                                           program_file[w_load_addr + 5],
+                                           program_file[w_load_addr + 4],
+                                           program_file[w_load_addr + 3],
+                                           program_file[w_load_addr + 2],
+                                           program_file[w_load_addr + 1],
+                                           program_file[w_load_addr + 0]};
+    
+end
+
 
 endmodule

@@ -71,7 +71,21 @@ module Briey_Wrap (
    input wire                            rlast,
    input wire                            ruser,
    input wire                            rvalid,
-   output wire                     rready
+   output wire                           rready,
+
+
+  // Soft reset RISCV core (not reset core's ram)
+  // input  wire          core_soft_reset, 
+  input  wire          program_load_en, // when high, start load program from host to riscv ram, need to set to low before enable RISCV core
+  input  wire          program_load_aw_valid,
+  output wire          program_load_aw_ready,
+  input  wire [14:0]   program_load_aw_payload_addr,
+  input  wire          program_load_w_valid,
+  output wire          program_load_w_ready,
+  input  wire  [511:0] program_load_w_payload_data,
+  input  wire  [63:0]  program_load_w_payload_strb,
+  input  wire          program_load_ram_reset // only hard reset ram
+
 );
 
 assign awburst = 2'b00;
@@ -134,7 +148,26 @@ assign araddr = physical_address_base + riscv_axi_araddr; // byte address
         .io_out_cxl_axi_r_payload_data(rdata),
         .io_out_cxl_axi_r_payload_id(rid),
         .io_out_cxl_axi_r_payload_resp(rresp),
-        .io_out_cxl_axi_r_payload_last(rlast)
+        .io_out_cxl_axi_r_payload_last(rlast),
+
+        // write riscv ram interface (for loading binarys)
+        .io_in_ram_io_arw_valid(program_load_aw_valid),
+        .io_in_ram_io_arw_ready(program_load_aw_ready),
+        .io_in_ram_io_arw_payload_addr(program_load_aw_payload_addr),
+        .io_in_ram_io_arw_payload_id(0),
+        .io_in_ram_io_arw_payload_len(0),
+        .io_in_ram_io_arw_payload_size(3'b110), // 64B aligned transfer
+        .io_in_ram_io_arw_payload_burst(2'b01), // INCR
+        .io_in_ram_io_arw_payload_write(program_load_aw_valid), // TODO: change this write signal
+        .io_in_ram_io_w_valid(program_load_w_valid),
+        .io_in_ram_io_w_ready(program_load_w_ready),
+        .io_in_ram_io_w_payload_data(program_load_w_payload_data),
+        .io_in_ram_io_w_payload_strb(program_load_w_payload_strb),
+        .io_in_ram_io_w_payload_last(1'b1),
+        .io_in_ram_io_b_ready(1'b1),
+        .io_in_ram_io_r_ready(1'b1),
+        .io_in_enable_ram_reload(program_load_en),
+        .io_in_ram_reset(program_load_ram_reset) // only hard reset ram
     );
 
 

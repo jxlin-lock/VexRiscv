@@ -85,7 +85,7 @@ OBJS := $(OBJS:..=miaou)
 OBJS := $(addprefix $(OBJDIR)/,$(OBJS))
 
 
-all: $(OBJDIR)/$(PROJ_NAME).elf $(OBJDIR)/$(PROJ_NAME).hex $(OBJDIR)/$(PROJ_NAME).asm $(OBJDIR)/$(PROJ_NAME).v
+all: $(OBJDIR)/$(PROJ_NAME).elf $(OBJDIR)/$(PROJ_NAME).hex $(OBJDIR)/$(PROJ_NAME).asm $(OBJDIR)/$(PROJ_NAME).bin $(OBJDIR)/$(PROJ_NAME).v
 
 $(OBJDIR)/%.elf: $(OBJS) | $(OBJDIR)
 	$(RISCV_CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBSINC) $(LIBS)
@@ -122,6 +122,7 @@ $(OBJDIR):
 clean:
 	rm -rf $(OBJDIR)/src
 	rm -f $(OBJDIR)/$(PROJ_NAME).elf
+	rm -f $(OBJDIR)/$(PROJ_NAME).bin
 	rm -f $(OBJDIR)/$(PROJ_NAME).hex
 	rm -f $(OBJDIR)/$(PROJ_NAME).map
 	rm -f $(OBJDIR)/$(PROJ_NAME).v
