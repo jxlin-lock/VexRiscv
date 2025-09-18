@@ -4,7 +4,7 @@ def fmt_bin(bstr):
     bstr = bstr[-8:]
     return bstr
 
-with open('cxl_demo.bin', 'rb') as f:
+with open('./build/cxl_flash.bin', 'rb') as f:
     bs = f.read()
     count = 0
     for c in bs:

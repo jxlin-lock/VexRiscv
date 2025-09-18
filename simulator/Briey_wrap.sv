@@ -83,8 +83,7 @@ module Briey_Wrap (
   input  wire          program_load_w_valid,
   output wire          program_load_w_ready,
   input  wire  [511:0] program_load_w_payload_data,
-  input  wire  [63:0]  program_load_w_payload_strb,
-  input  wire          program_load_ram_reset // only hard reset ram
+  input  wire  [63:0]  program_load_w_payload_strb
 
 );
 
@@ -166,8 +165,8 @@ assign araddr = physical_address_base + riscv_axi_araddr; // byte address
         .io_in_ram_io_w_payload_last(1'b1),
         .io_in_ram_io_b_ready(1'b1),
         .io_in_ram_io_r_ready(1'b1),
-        .io_in_enable_ram_reload(program_load_en),
-        .io_in_ram_reset(program_load_ram_reset) // only hard reset ram
+        .io_in_enable_ram_reload(program_load_en)
+        // .io_in_ram_reset(program_load_ram_reset) // only hard reset ram
     );
 
 

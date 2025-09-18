@@ -198,7 +198,6 @@ class Briey(val config: BrieyConfig) extends Component{
     val coreInterrupt = in Bool()
     val out_cxl_axi = master(Axi4(axiConfig))
     val in_ram_io = slave(Axi4Shared(onchipaxiConfig)) // host config on-chip ram to reload program
-    val in_ram_reset = in Bool()
     val in_enable_ram_reload = in Bool()
   }
 
@@ -253,9 +252,9 @@ class Briey(val config: BrieyConfig) extends Component{
 
   val axi = new ClockingArea(axiClockDomain) {
   val ram_reset = Bool()
-  ram_reset := resetCtrl.systemReset && io.in_ram_reset
+  ram_reset := resetCtrl.systemReset && (!io.in_enable_ram_reload)
   // create special reset area for ram: only when home ram_reset is set as high, it will be reseted
-  val ram_reset_area = new ResetArea(ram_reset, true) {
+  val ram_reset_area = new ResetArea(ram_reset, false) {
     val ram = Axi4SharedOnChipRam(
       dataWidth = 512,
       byteCount = onChipRamSize,

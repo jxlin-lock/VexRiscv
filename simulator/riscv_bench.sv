@@ -3,22 +3,13 @@
 module riscv_bench;
 reg  clk;
 reg rst;
-reg start;
+
 always begin
     clk = ~clk; 
     #2;
 end
-reg    [23:0]                                   write_reg_addr;
-reg    [511:0]                                  write_reg_data;
-reg                                             write_reg_enabled;
 
-
-reg [71:0]                ip2cafu_axisth1_tdata;
-reg ip2cafu_axisth1_tvalid;
-wire cafu2ip_axisth1_tready;
-reg core_soft_reset, program_load_en_;
-reg program_load_ram_reset; //TODO figure out how to do ram reset
-
+// program load signals
 reg           program_load_en;
 wire          program_load_aw_valid;
 wire          program_load_aw_ready;
@@ -33,68 +24,24 @@ initial begin
     $dumpvars(0, riscv_bench);
     clk = 0;
     rst = 1;
-    program_load_ram_reset = 1;
-    start = 0;
-    ip2cafu_axisth1_tvalid = 0;
-    core_soft_reset = 0;
+
     program_load_en = 0;
     
     #100;
-    rst = 0;
-    program_load_ram_reset = 0;
+    rst = 0;   // run riscv core
 
-    #100;
-    write_reg_addr = 23'h9000; // dest cxl
-    write_reg_data = 512'h0;
-    write_reg_enabled = 1;
-    #4;
-    write_reg_enabled = 0;
-
-
-    #100;
-    write_reg_addr = 23'hf000; // addr
-    write_reg_data = 512'h40000;
-    write_reg_enabled = 1;
-    #4;
-    write_reg_enabled = 0;
-
-
-    #100;
-    write_reg_addr = 23'h8500; // awuser
-    write_reg_data = 512'h000000;
-    write_reg_enabled = 1;
-    #4;
-    write_reg_enabled = 0;
-    
-    #100;
-    write_reg_addr = 23'h8600; // awuser
-    write_reg_data = 512'h400000;
-    write_reg_enabled = 1;
-    #4;
-    write_reg_enabled = 0;
-
-
-    #8000; // try to reset core
+    #8000; // reset core
     rst = 1;
 
     # 100;
-    // reload program
+    // hold core reset, reload program
     program_load_en = 1;
 
     # 800;
-    program_load_en = 0;
+    program_load_en = 0; // finish loading program
 
-    #80;
-    program_load_ram_reset = 1;
-
-    # 100;
-    program_load_ram_reset = 0;
-
-    # 80;
+    # 80;   // de-reset core, run new program
     rst = 0;
-    core_soft_reset = 0;
-
-
 end
 
 
@@ -140,7 +87,7 @@ end
 
     program_loader program_loader_inst (
     .clk(clk),
-    .rst(program_load_ram_reset),
+    .rst(!program_load_en),
     .program_load_en(program_load_en),
     .program_load_aw_valid(program_load_aw_valid),
     .program_load_aw_ready(program_load_aw_ready),
@@ -203,16 +150,14 @@ end
     .rvalid                                (axi_rvalid),
     .rready                                (axi_rready),
 
-    // .core_soft_reset(core_soft_reset),
-    .program_load_en(program_load_en),
+    .program_load_en(program_load_en), // if program_load_en is high, the ram will be de_reset and program is loaded to ram
     .program_load_aw_valid(program_load_aw_valid),
     .program_load_aw_ready(program_load_aw_ready),
     .program_load_aw_payload_addr(program_load_aw_payload_addr),
     .program_load_w_valid(program_load_w_valid),
     .program_load_w_ready(program_load_w_ready),
     .program_load_w_payload_data(program_load_w_payload_data),
-    .program_load_w_payload_strb(program_load_w_payload_strb),
-    .program_load_ram_reset(program_load_ram_reset)
+    .program_load_w_payload_strb(program_load_w_payload_strb)
     );
 
 
@@ -280,7 +225,7 @@ module program_loader(
   reg [7:0] program_file [0:2047];
   integer file_handle;
   initial begin
-    $readmemb("cxl_demo_converted.bin", program_file);
+    $readmemb("cxl_flash_converted.bin", program_file);
   end
 
  reg[19:0] w_load_addr;

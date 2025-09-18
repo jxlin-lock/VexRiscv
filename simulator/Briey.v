@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.12.0    git head : 1aa7d7b5732f11cca2dd83bacc2a4cb92ca8e5c9
 // Component : Briey
-// Git hash  : aa24b9791a74166c79321a72f32ef005d2cb0371
+// Git hash  : 5d4031b05fc608df593c91eb9dee5092b29993bd
 
 `timescale 1ns/1ps
 
@@ -65,7 +65,6 @@ module Briey (
   output wire [3:0]    io_in_ram_io_r_payload_id,
   output wire [1:0]    io_in_ram_io_r_payload_resp,
   output wire          io_in_ram_io_r_payload_last,
-  input  wire          io_in_ram_reset,
   input  wire          io_in_enable_ram_reload
 );
 
@@ -325,14 +324,13 @@ module Briey (
   wire                cxl_axi_shared_r_payload_last;
   reg                 resetCtrl_systemResetUnbuffered;
   reg        [5:0]    resetCtrl_systemResetCounter;
-  wire       [5:0]    _zz_when_Briey_l223;
-  wire                when_Briey_l223;
-  wire                when_Briey_l227;
+  wire       [5:0]    _zz_when_Briey_l222;
+  wire                when_Briey_l222;
+  wire                when_Briey_l226;
   reg                 resetCtrl_systemReset;
   reg                 resetCtrl_axiReset;
   wire                resetCtrl_vgaReset;
   wire                axi_ram_reset;
-  wire                axi_ram_reset_area_newReset;
   wire                axi_ram_cond;
   wire                axi_ram_mux_cpu_arw_valid;
   wire                axi_ram_mux_cpu_arw_ready;
@@ -642,31 +640,31 @@ module Briey (
     .io_axiClk  (io_axiClk                             )  //i
   );
   Axi4SharedOnChipRam axi_ram_reset_area_ram (
-    .io_axi_arw_valid            (streamMux_2_io_output_valid                        ), //i
-    .io_axi_arw_ready            (axi_ram_reset_area_ram_io_axi_arw_ready            ), //o
-    .io_axi_arw_payload_addr     (streamMux_2_io_output_payload_addr[14:0]           ), //i
-    .io_axi_arw_payload_id       (streamMux_2_io_output_payload_id[3:0]              ), //i
-    .io_axi_arw_payload_len      (streamMux_2_io_output_payload_len[7:0]             ), //i
-    .io_axi_arw_payload_size     (streamMux_2_io_output_payload_size[2:0]            ), //i
-    .io_axi_arw_payload_burst    (streamMux_2_io_output_payload_burst[1:0]           ), //i
-    .io_axi_arw_payload_write    (streamMux_2_io_output_payload_write                ), //i
-    .io_axi_w_valid              (streamMux_3_io_output_valid                        ), //i
-    .io_axi_w_ready              (axi_ram_reset_area_ram_io_axi_w_ready              ), //o
-    .io_axi_w_payload_data       (streamMux_3_io_output_payload_data[511:0]          ), //i
-    .io_axi_w_payload_strb       (streamMux_3_io_output_payload_strb[63:0]           ), //i
-    .io_axi_w_payload_last       (streamMux_3_io_output_payload_last                 ), //i
-    .io_axi_b_valid              (axi_ram_reset_area_ram_io_axi_b_valid              ), //o
-    .io_axi_b_ready              (streamDemux_2_io_input_ready                       ), //i
-    .io_axi_b_payload_id         (axi_ram_reset_area_ram_io_axi_b_payload_id[3:0]    ), //o
-    .io_axi_b_payload_resp       (axi_ram_reset_area_ram_io_axi_b_payload_resp[1:0]  ), //o
-    .io_axi_r_valid              (axi_ram_reset_area_ram_io_axi_r_valid              ), //o
-    .io_axi_r_ready              (streamDemux_3_io_input_ready                       ), //i
-    .io_axi_r_payload_data       (axi_ram_reset_area_ram_io_axi_r_payload_data[511:0]), //o
-    .io_axi_r_payload_id         (axi_ram_reset_area_ram_io_axi_r_payload_id[3:0]    ), //o
-    .io_axi_r_payload_resp       (axi_ram_reset_area_ram_io_axi_r_payload_resp[1:0]  ), //o
-    .io_axi_r_payload_last       (axi_ram_reset_area_ram_io_axi_r_payload_last       ), //o
-    .io_axiClk                   (io_axiClk                                          ), //i
-    .axi_ram_reset_area_newReset (axi_ram_reset_area_newReset                        )  //i
+    .io_axi_arw_valid         (streamMux_2_io_output_valid                        ), //i
+    .io_axi_arw_ready         (axi_ram_reset_area_ram_io_axi_arw_ready            ), //o
+    .io_axi_arw_payload_addr  (streamMux_2_io_output_payload_addr[14:0]           ), //i
+    .io_axi_arw_payload_id    (streamMux_2_io_output_payload_id[3:0]              ), //i
+    .io_axi_arw_payload_len   (streamMux_2_io_output_payload_len[7:0]             ), //i
+    .io_axi_arw_payload_size  (streamMux_2_io_output_payload_size[2:0]            ), //i
+    .io_axi_arw_payload_burst (streamMux_2_io_output_payload_burst[1:0]           ), //i
+    .io_axi_arw_payload_write (streamMux_2_io_output_payload_write                ), //i
+    .io_axi_w_valid           (streamMux_3_io_output_valid                        ), //i
+    .io_axi_w_ready           (axi_ram_reset_area_ram_io_axi_w_ready              ), //o
+    .io_axi_w_payload_data    (streamMux_3_io_output_payload_data[511:0]          ), //i
+    .io_axi_w_payload_strb    (streamMux_3_io_output_payload_strb[63:0]           ), //i
+    .io_axi_w_payload_last    (streamMux_3_io_output_payload_last                 ), //i
+    .io_axi_b_valid           (axi_ram_reset_area_ram_io_axi_b_valid              ), //o
+    .io_axi_b_ready           (streamDemux_2_io_input_ready                       ), //i
+    .io_axi_b_payload_id      (axi_ram_reset_area_ram_io_axi_b_payload_id[3:0]    ), //o
+    .io_axi_b_payload_resp    (axi_ram_reset_area_ram_io_axi_b_payload_resp[1:0]  ), //o
+    .io_axi_r_valid           (axi_ram_reset_area_ram_io_axi_r_valid              ), //o
+    .io_axi_r_ready           (streamDemux_3_io_input_ready                       ), //i
+    .io_axi_r_payload_data    (axi_ram_reset_area_ram_io_axi_r_payload_data[511:0]), //o
+    .io_axi_r_payload_id      (axi_ram_reset_area_ram_io_axi_r_payload_id[3:0]    ), //o
+    .io_axi_r_payload_resp    (axi_ram_reset_area_ram_io_axi_r_payload_resp[1:0]  ), //o
+    .io_axi_r_payload_last    (axi_ram_reset_area_ram_io_axi_r_payload_last       ), //o
+    .io_axiClk                (io_axiClk                                          ), //i
+    .axi_ram_reset            (axi_ram_reset                                      )  //i
   );
   StreamMux streamMux_2 (
     .io_select                 (axi_ram_mux_cond                        ), //i
@@ -1172,17 +1170,16 @@ module Briey (
   assign io_out_cxl_axi_b_ready = cxl_axi_shared_b_ready;
   always @(*) begin
     resetCtrl_systemResetUnbuffered = 1'b0;
-    if(when_Briey_l223) begin
+    if(when_Briey_l222) begin
       resetCtrl_systemResetUnbuffered = 1'b1;
     end
   end
 
-  assign _zz_when_Briey_l223[5 : 0] = 6'h3f;
-  assign when_Briey_l223 = (resetCtrl_systemResetCounter != _zz_when_Briey_l223);
-  assign when_Briey_l227 = io_asyncReset_buffercc_io_dataOut;
+  assign _zz_when_Briey_l222[5 : 0] = 6'h3f;
+  assign when_Briey_l222 = (resetCtrl_systemResetCounter != _zz_when_Briey_l222);
+  assign when_Briey_l226 = io_asyncReset_buffercc_io_dataOut;
   assign resetCtrl_vgaReset = resetCtrl_axiReset_buffercc_io_dataOut;
-  assign axi_ram_reset = (resetCtrl_systemReset && io_in_ram_reset);
-  assign axi_ram_reset_area_newReset = (resetCtrl_axiReset || axi_ram_reset);
+  assign axi_ram_reset = (resetCtrl_systemReset && (! io_in_enable_ram_reload));
   assign axi_ram_cond = io_in_enable_ram_reload;
   assign axi_ram_mux_cond = axi_ram_cond;
   assign axi_ram_mux_cpu_arw_ready = streamMux_2_io_inputs_0_ready;
@@ -1551,10 +1548,10 @@ module Briey (
   assign io_output_w_s2mPipe_m2sPipe_payload_last_1 = io_output_w_s2mPipe_rData_last_1;
   assign io_output_w_s2mPipe_m2sPipe_ready_1 = axi_reg_io_axi_w_ready;
   always @(posedge io_axiClk) begin
-    if(when_Briey_l223) begin
+    if(when_Briey_l222) begin
       resetCtrl_systemResetCounter <= (resetCtrl_systemResetCounter + 6'h01);
     end
-    if(when_Briey_l227) begin
+    if(when_Briey_l226) begin
       resetCtrl_systemResetCounter <= 6'h0;
     end
   end
@@ -10151,7 +10148,7 @@ module Axi4SharedOnChipRam (
   output wire [1:0]    io_axi_r_payload_resp,
   output wire          io_axi_r_payload_last,
   input  wire          io_axiClk,
-  input  wire          axi_ram_reset_area_newReset
+  input  wire          axi_ram_reset
 );
 
   reg        [511:0]  ram_spinal_port0;
@@ -10884,8 +10881,8 @@ module Axi4SharedOnChipRam (
   assign io_axi_b_valid = ((stage1_valid && stage1_payload_fragment_write) && stage1_payload_last);
   assign io_axi_b_payload_resp = 2'b00;
   assign io_axi_b_payload_id = stage1_payload_fragment_id;
-  always @(posedge io_axiClk or posedge axi_ram_reset_area_newReset) begin
-    if(axi_ram_reset_area_newReset) begin
+  always @(posedge io_axiClk or posedge axi_ram_reset) begin
+    if(axi_ram_reset) begin
       unburstify_buffer_valid <= 1'b0;
       stage0_rValid <= 1'b0;
     end else begin

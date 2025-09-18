@@ -1,4 +1,4 @@
-PROJ_NAME=cxl_demo
+PROJ_NAME=cxl_flash
 DEBUG=no
 BENCH=no
 MULDIV=no
