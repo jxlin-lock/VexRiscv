@@ -12,7 +12,7 @@ sbt -java-home "$JAVA_HOME" "runMain vexriscv.demo.BrieyWithMemoryInit"
 # copy generated Briey.v to simulation
 cp ./Briey.v* ./simulator
 cd simulator
-iverilog -g2012 -o sim.vvp ram_cache.sv riscv_bench.sv Briey_wrap.sv Briey.v
+iverilog -g2012 -o sim.vvp ram_cache.sv riscv_bench.sv Briey_wrap.sv Briey.v axil_ram.v
 vvp sim.vvp
 gtkwave wave.vcd
 

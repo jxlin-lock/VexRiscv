@@ -104,6 +104,29 @@ reg [63:0] physical_address_base = 64'h0; // change base address based on host m
 assign awaddr = physical_address_base + riscv_axi_awaddr; // byte address
 assign araddr = physical_address_base + riscv_axi_araddr; // byte address
 
+    wire          io_out_reg_axi_aw_valid;
+    wire          io_out_reg_axi_aw_ready;
+    wire [9:0]    io_out_reg_axi_aw_payload_addr;
+
+    wire          io_out_reg_axi_ar_valid;
+    wire          io_out_reg_axi_ar_ready;
+    wire [9:0]    io_out_reg_axi_ar_payload_addr;
+
+    wire          io_out_reg_axi_w_valid;
+    wire          io_out_reg_axi_w_ready;
+    wire [511:0]  io_out_reg_axi_w_payload_data;
+    wire [63:0]   io_out_reg_axi_w_payload_strb;
+
+    wire          io_out_reg_axi_b_valid;
+    wire          io_out_reg_axi_b_ready;
+    wire [1:0]    io_out_reg_axi_b_payload_resp;
+
+    wire          io_out_reg_axi_r_valid;
+    wire          io_out_reg_axi_r_ready;
+    wire [511:0]  io_out_reg_axi_r_payload_data;
+    wire [1:0]    io_out_reg_axi_r_payload_resp;
+
+
 
     Briey #()
     briey_inst (
@@ -150,6 +173,25 @@ assign araddr = physical_address_base + riscv_axi_araddr; // byte address
         .io_out_cxl_axi_r_payload_last(rlast),
 
         // write riscv ram interface (for loading binarys)
+        .io_out_reg_axi_aw_valid(io_out_reg_axi_aw_valid),
+        .io_out_reg_axi_aw_ready(io_out_reg_axi_aw_ready),
+        .io_out_reg_axi_aw_payload_addr(io_out_reg_axi_aw_payload_addr),
+        .io_out_reg_axi_w_valid(io_out_reg_axi_w_valid),
+        .io_out_reg_axi_w_ready(io_out_reg_axi_w_ready),
+        .io_out_reg_axi_w_payload_data(io_out_reg_axi_w_payload_data),
+        .io_out_reg_axi_w_payload_strb(io_out_reg_axi_w_payload_strb),
+        .io_out_reg_axi_b_valid(io_out_reg_axi_b_valid),
+        .io_out_reg_axi_b_ready(io_out_reg_axi_b_ready),
+        .io_out_reg_axi_b_payload_resp(io_out_reg_axi_b_payload_resp),
+        .io_out_reg_axi_ar_valid(io_out_reg_axi_ar_valid),
+        .io_out_reg_axi_ar_ready(io_out_reg_axi_ar_ready),
+        .io_out_reg_axi_ar_payload_addr(io_out_reg_axi_ar_payload_addr),
+        .io_out_reg_axi_r_valid(io_out_reg_axi_r_valid),
+        .io_out_reg_axi_r_ready(io_out_reg_axi_r_ready),
+        .io_out_reg_axi_r_payload_data(io_out_reg_axi_r_payload_data),
+        .io_out_reg_axi_r_payload_resp(io_out_reg_axi_r_payload_resp),
+
+        // write riscv ram interface (for loading binarys)
         .io_in_ram_io_arw_valid(program_load_aw_valid),
         .io_in_ram_io_arw_ready(program_load_aw_ready),
         .io_in_ram_io_arw_payload_addr(program_load_aw_payload_addr),
@@ -166,9 +208,42 @@ assign araddr = physical_address_base + riscv_axi_araddr; // byte address
         .io_in_ram_io_b_ready(1'b1),
         .io_in_ram_io_r_ready(1'b1),
         .io_in_enable_ram_reload(program_load_en)
-        // .io_in_ram_reset(program_load_ram_reset) // only hard reset ram
     );
 
 
+  axil_ram #(
+    .ADDR_WIDTH       (10), // change based on Briey memory size
+    .DATA_WIDTH       (512)
+  ) register_ram (
+    .clk        (axi4_mm_clk),
+    .rst        (!axi4_mm_rst_n),
+
+    // AXI write address channel
+    .s_axil_awvalid    (io_out_reg_axi_aw_valid),
+    .s_axil_awready    (io_out_reg_axi_aw_ready),
+    .s_axil_awaddr     (io_out_reg_axi_aw_payload_addr),
+
+    // AXIl write data channel
+    .s_axil_wvalid     (io_out_reg_axi_w_valid),
+    .s_axil_wready     (io_out_reg_axi_w_ready),
+    .s_axil_wdata      (io_out_reg_axi_w_payload_data),
+    .s_axil_wstrb      (io_out_reg_axi_w_payload_strb),
+
+    // AXIl write response channel
+    .s_axil_bvalid     (io_out_reg_axi_b_valid),
+    .s_axil_bready     (io_out_reg_axi_b_ready),
+    .s_axil_bresp      (io_out_reg_axi_b_payload_resp),
+    // AXIl read address channel
+    .s_axil_arvalid    (io_out_reg_axi_ar_valid),
+    .s_axil_arready    (io_out_reg_axi_ar_ready),
+    .s_axil_araddr     (io_out_reg_axi_ar_payload_addr),
+
+    .s_axil_rvalid     (io_out_reg_axi_r_valid),
+    .s_axil_rready     (io_out_reg_axi_r_ready),
+    .s_axil_rdata      (io_out_reg_axi_r_payload_data),
+    .s_axil_rresp      (io_out_reg_axi_r_payload_resp)
+    // AXI read data channel
+  );
 
 endmodule
+

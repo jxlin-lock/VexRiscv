@@ -183,8 +183,9 @@ class Briey(val config: BrieyConfig) extends Component{
   val debug = true
   val interruptCount = 4
   def vgaRgbConfig = RgbConfig(5,6,5)
-    val CXL_RAM_SIZE = 32 kB // CXL RAM size
+  val CXL_RAM_SIZE = 32 kB // CXL RAM size
   val axiConfig = Axi4SharedOnChipRam.getAxiConfig(512,CXL_RAM_SIZE,12)
+  val regaxiConfig = Axi4SharedOnChipRam.getAxiConfig(512,1 kB,0)
   val onchipaxiConfig = Axi4SharedOnChipRam.getAxiConfig(512,onChipRamSize,4)
   val io = new Bundle{
     //Clocks / reset
@@ -197,6 +198,7 @@ class Briey(val config: BrieyConfig) extends Component{
 
     val coreInterrupt = in Bool()
     val out_cxl_axi = master(Axi4(axiConfig))
+    val out_reg_axi = master(Axi4(regaxiConfig))
     val in_ram_io = slave(Axi4Shared(onchipaxiConfig)) // host config on-chip ram to reload program
     val in_enable_ram_reload = in Bool()
   }
@@ -204,7 +206,8 @@ class Briey(val config: BrieyConfig) extends Component{
   val cxl_axi_shared = Axi4Shared(axiConfig)
   io.out_cxl_axi << cxl_axi_shared.toAxi4().toFullConfig()
 
-
+  val reg_axi_shared = Axi4Shared(regaxiConfig)
+  io.out_reg_axi << reg_axi_shared.toAxi4().toFullConfig()
   val resetCtrlClockDomain = ClockDomain(
     clock = io.axiClk,
     config = ClockDomainConfig(
@@ -280,13 +283,6 @@ class Briey(val config: BrieyConfig) extends Component{
   val s2 = StreamDemux(ram_reset_area.ram.io.axi.r, ram_mux_cond, 2)
   s2(0) >> ram_mux_cpu.r
   s2(1) >> ram_mux_io.r
-  
-  val reg = Axi4SharedOnChipRam(
-      dataWidth = 512,
-      byteCount = 1 MB,
-      idWidth = 4
-  )
-
 
     val core = new Area{
       val config = VexRiscvConfig(
@@ -317,14 +313,14 @@ class Briey(val config: BrieyConfig) extends Component{
     val axiCrossbar = Axi4CrossbarFactory()
 
     axiCrossbar.addSlaves(
-      reg.io.axi       -> (0xF0000000L,   4 kB),
+      reg_axi_shared   -> (0xF0000000L,   1 kB),
       cxl_axi_shared   -> (0xA0000000L,   CXL_RAM_SIZE),
       ram_mux_cpu       -> (0x80000000L,   onChipRamSize)
     )
     
     axiCrossbar.addConnections(
       core.iBus       -> List(ram_mux_cpu),
-      core.dBus       -> List(ram_mux_cpu, cxl_axi_shared, reg.io.axi)
+      core.dBus       -> List(ram_mux_cpu, cxl_axi_shared, reg_axi_shared)
     )
 
     axiCrossbar.addPipelining(ram_mux_cpu)((crossbar,ctrl) => {
@@ -334,7 +330,7 @@ class Briey(val config: BrieyConfig) extends Component{
       crossbar.readRsp               <<  ctrl.readRsp
     })
 
-    axiCrossbar.addPipelining(reg.io.axi)((crossbar,ctrl) => {
+    axiCrossbar.addPipelining(reg_axi_shared)((crossbar,ctrl) => {
       crossbar.sharedCmd.halfPipe()  >>  ctrl.sharedCmd
       crossbar.writeData            >/-> ctrl.writeData
       crossbar.writeRsp              <<  ctrl.writeRsp
