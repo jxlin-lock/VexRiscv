@@ -87,7 +87,6 @@ end
 
     program_loader program_loader_inst (
     .clk(clk),
-    .rst(!program_load_en),
     .program_load_en(program_load_en),
     .program_load_aw_valid(program_load_aw_valid),
     .program_load_aw_ready(program_load_aw_ready),
@@ -212,7 +211,6 @@ endmodule
 
 module program_loader(
     input        clk,
-    input        rst,
     input        program_load_en,
     output reg   program_load_aw_valid,
     input        program_load_aw_ready,
@@ -232,7 +230,7 @@ module program_loader(
  reg[19:0] aw_load_addr;
 
 always@(posedge clk) begin
-    if (rst) begin
+    if (!program_load_en) begin
         w_load_addr <= 0;
         aw_load_addr <= 0;
     end 
