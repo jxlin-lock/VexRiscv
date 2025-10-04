@@ -59,6 +59,9 @@ module Briey_axil_cfg (
 				'h00: axil.rdata <= 64'ha0a1a2a3__deadbeef;
         'h10: axil.rdata <= enable;
         'h20: axil.rdata <= physical_address_base;
+        'h60: axil.rdata <= load_w_payload_data_idx;
+        'h80: axil.rdata <= {load_aw_valid, load_w_valid};
+        'ha0: axil.rdata <= load_aw_payload_addr;
 				default: axil.rdata <= 64'hdeaddead__deaddead;
 			endcase
 		end
@@ -118,7 +121,7 @@ module Briey_axil_cfg (
   assign program_load_aw_payload_addr = load_aw_payload_addr;
   assign program_load_w_valid = load_w_valid;
   assign program_load_w_payload_data = load_w_payload_data;
-  assign program_load_w_payload_strb = {64{1'b1}};
+  assign program_load_w_payload_strb = 64'hFFFFFFFFFFFFFFFF;
 endmodule
 
 module Briey_Wrap (
@@ -276,7 +279,7 @@ module Briey_Wrap (
 
 
   Briey briey_inst (
-    .io_asyncReset (!axi4_mm_rst_n),
+    .io_asyncReset (!axi4_mm_rst_n | core_rst),
     .io_axiClk (axi4_mm_clk),
     .io_vgaClk (axi4_mm_clk),
     .io_jtag_tms (1'b0),
@@ -358,39 +361,39 @@ module Briey_Wrap (
   );
 
 
-  axil_ram #(
-    .ADDR_WIDTH       (10), // change based on Briey memory size
-    .DATA_WIDTH       (512)
-  ) register_ram (
-    .clk        (axi4_mm_clk),
-    .rst        (!axi4_mm_rst_n),
+  // axil_ram #(
+  //   .ADDR_WIDTH       (10), // change based on Briey memory size
+  //   .DATA_WIDTH       (512)
+  // ) register_ram (
+  //   .clk        (axi4_mm_clk),
+  //   .rst        (!axi4_mm_rst_n),
 
-    // AXI write address channel
-    .s_axil_awvalid    (io_out_reg_axi_aw_valid),
-    .s_axil_awready    (io_out_reg_axi_aw_ready),
-    .s_axil_awaddr     (io_out_reg_axi_aw_payload_addr),
+  //   // AXI write address channel
+  //   .s_axil_awvalid    (io_out_reg_axi_aw_valid),
+  //   .s_axil_awready    (io_out_reg_axi_aw_ready),
+  //   .s_axil_awaddr     (io_out_reg_axi_aw_payload_addr),
 
-    // AXIl write data channel
-    .s_axil_wvalid     (io_out_reg_axi_w_valid),
-    .s_axil_wready     (io_out_reg_axi_w_ready),
-    .s_axil_wdata      (io_out_reg_axi_w_payload_data),
-    .s_axil_wstrb      (io_out_reg_axi_w_payload_strb),
+  //   // AXIl write data channel
+  //   .s_axil_wvalid     (io_out_reg_axi_w_valid),
+  //   .s_axil_wready     (io_out_reg_axi_w_ready),
+  //   .s_axil_wdata      (io_out_reg_axi_w_payload_data),
+  //   .s_axil_wstrb      (io_out_reg_axi_w_payload_strb),
 
-    // AXIl write response channel
-    .s_axil_bvalid     (io_out_reg_axi_b_valid),
-    .s_axil_bready     (io_out_reg_axi_b_ready),
-    .s_axil_bresp      (io_out_reg_axi_b_payload_resp),
-    // AXIl read address channel
-    .s_axil_arvalid    (io_out_reg_axi_ar_valid),
-    .s_axil_arready    (io_out_reg_axi_ar_ready),
-    .s_axil_araddr     (io_out_reg_axi_ar_payload_addr),
+  //   // AXIl write response channel
+  //   .s_axil_bvalid     (io_out_reg_axi_b_valid),
+  //   .s_axil_bready     (io_out_reg_axi_b_ready),
+  //   .s_axil_bresp      (io_out_reg_axi_b_payload_resp),
+  //   // AXIl read address channel
+  //   .s_axil_arvalid    (io_out_reg_axi_ar_valid),
+  //   .s_axil_arready    (io_out_reg_axi_ar_ready),
+  //   .s_axil_araddr     (io_out_reg_axi_ar_payload_addr),
 
-    .s_axil_rvalid     (io_out_reg_axi_r_valid),
-    .s_axil_rready     (io_out_reg_axi_r_ready),
-    .s_axil_rdata      (io_out_reg_axi_r_payload_data),
-    .s_axil_rresp      (io_out_reg_axi_r_payload_resp)
-    // AXI read data channel
-  );
+  //   .s_axil_rvalid     (io_out_reg_axi_r_valid),
+  //   .s_axil_rready     (io_out_reg_axi_r_ready),
+  //   .s_axil_rdata      (io_out_reg_axi_r_payload_data),
+  //   .s_axil_rresp      (io_out_reg_axi_r_payload_resp)
+  //   // AXI read data channel
+  // );
 
 
   assign awburst = 2'b00;
