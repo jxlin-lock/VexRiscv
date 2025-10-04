@@ -1,17 +1,6 @@
 #ifndef SHARED_KV_H
 #define SHARED_KV_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <pthread.h>
-
-// --- Configuration ---
-#define HUGEPAGE_FILE_PATH "/dev/hugepages/kv_store_hp_fixed"
-#define HUGE_PAGE_SIZE (2 * 1024 * 1024) // 2MB
-#define NUM_PAGES 2 // We need 2 pages to fit our data
 #define TOTAL_MEM_SIZE (NUM_PAGES * HUGE_PAGE_SIZE) // Total allocation is 4MB
 
 #define NUM_BUCKETS 4096
@@ -48,9 +37,6 @@ int my_strncmp(const char *s1, const char *s2, size_t n) {
     }
     return *(const unsigned char*)s1 - *(const unsigned char*)s2;
 }
-
-// Static assertion to ensure our struct fits in the allocated space
-_Static_assert(sizeof(SharedKVStore) < TOTAL_MEM_SIZE, "SharedKVStore size exceeds total allocated size");
 
 // --- Helper Function ---
 static uint64_t hash_key(const char* key) {

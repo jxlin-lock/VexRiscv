@@ -21,6 +21,7 @@ getter: getter.c shared_kv.h
 
 # Rule to clean up build files
 clean:
+	./setter --destroy
 	rm -f $(TARGETS)
 
 # Phony targets
