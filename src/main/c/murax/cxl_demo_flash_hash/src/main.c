@@ -30,7 +30,7 @@ char* kv_get(SharedKVStore* store, const char* key) {
             return bucket->slots[i].value;
         }
     }
-    return NULL;
+    return -1;
 }
 
 

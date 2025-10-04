@@ -9,9 +9,8 @@
 #define MAX_KEY_LEN 32
 #define MAX_VALUE_LEN 128
 
-// --- Shared Data Structures (no changes here) ---
 typedef struct {
-    bool in_use;
+    char in_use;
     char key[MAX_KEY_LEN];
     char value[MAX_VALUE_LEN];
 } KVSlot;
@@ -21,11 +20,11 @@ typedef struct {
 } Bucket;
 
 typedef struct {
-    pthread_mutex_t mutex;
     Bucket index[NUM_BUCKETS];
 } SharedKVStore;
 
-int my_strncmp(const char *s1, const char *s2, size_t n) {
+
+int my_strncmp(const char *s1, const char *s2, int n) {
     while (n > 0 && *s1 != '\0' && *s1 == *s2) {
         s1++; // Move to the next character in s1
         s2++; // Move to the next character in s2
