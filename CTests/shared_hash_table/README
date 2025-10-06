@@ -1,0 +1,5 @@
+bash setup_hugepage.sh
+sudo python3 runsetter.py # on one terminal
+sudo python3 rungetter.py # on another terminal (If test use Linux)
+
+If test use CXL FPGA, rungetter under src/main/c/murax/cxl_demo_flash_hash
