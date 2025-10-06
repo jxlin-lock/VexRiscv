@@ -9,7 +9,17 @@ module Briey_axil_cfg (
     output logic [63:0] physical_address_base,
     output logic core_rst,
 
+    output logic [5:0] briey_awuser,
+    output logic [5:0] briey_aruser,
 
+    output logic [3:0] log_operation_mode,
+    output logic [5:0] log_awuser_reg,
+    output logic [63:0] log_write_base_addr,
+
+    input logic [63:0] stat_h0,
+    input logic [63:0] stat_d0,
+    input logic [63:0] stat_h1,
+	  input logic [63:0] stat_d1,
 
     output logic program_load_en,
     output logic program_load_aw_valid,
@@ -29,7 +39,7 @@ module Briey_axil_cfg (
   logic [ 14:0]  load_aw_payload_addr;
   logic load_w_valid;
 
-  logic [5:0] load_w_payload_data_idx;
+  logic [6:0] load_w_payload_data_idx;
   logic [511:0] load_w_payload_data;
 
   always_ff @(posedge clk) begin: axil_state_ff
@@ -61,7 +71,19 @@ module Briey_axil_cfg (
         'h20: axil.rdata <= physical_address_base;
         'h60: axil.rdata <= load_w_payload_data_idx;
         'h80: axil.rdata <= {load_aw_valid, load_w_valid};
+        'h90: axil.rdata <= {program_load_aw_ready, program_load_w_ready};
         'ha0: axil.rdata <= load_aw_payload_addr;
+
+        'hb0: axil.rdata <= log_operation_mode;
+        'hc0: axil.rdata <= log_awuser_reg;
+        'hd0: axil.rdata <= log_write_base_addr;
+
+        'he0: axil.rdata <= stat_h0;
+        'hf0: axil.rdata <= stat_h1;
+        'h100: axil.rdata <= stat_d0;
+        'h110: axil.rdata <= stat_d1;
+
+        'h120: axil.rdata <= {briey_aruser, briey_awuser};
 				default: axil.rdata <= 64'hdeaddead__deaddead;
 			endcase
 		end
@@ -81,6 +103,10 @@ module Briey_axil_cfg (
       physical_address_base <= 0;
       core_rst <= 0;
 
+      log_operation_mode <= 0;
+      log_awuser_reg <= 0;
+      log_write_base_addr <= 0;
+      
       load_en <= 0;
       load_w_payload_data_idx <= 0;
       load_w_payload_data <= 0;
@@ -98,10 +124,15 @@ module Briey_axil_cfg (
           'h40: core_rst <= 0;
           'h50: load_en <= axil.wdata[0];
           'h60: load_w_payload_data_idx <= axil.wdata[5:0];
-          'h70: load_w_payload_data[(load_w_payload_data_idx + 1) * 8 - 1 -: 8] <= axil.wdata[7:0];
-          'h80: load_aw_valid <= 1;
-          'h90: load_w_valid <= 1;
+          'h70: load_w_payload_data[(load_w_payload_data_idx[5:0] + 1) * 8 - 1 -: 8] <= axil.wdata[7:0]; // can this overflow?
+          'h80: {load_aw_valid, load_w_valid} <= {1'b1, 1'b1};
           'ha0: load_aw_payload_addr <= axil.wdata[14:0];
+
+          'hb0: log_operation_mode <= axil.wdata[3:0];
+          'hc0: log_awuser_reg <= axil.wdata[5:0];
+          'hd0: log_write_base_addr <= axil.wdata;
+
+          'he0: {briey_aruser, briey_awuser} <= axil.wdata;
 				endcase
 			end
 		end
@@ -196,7 +227,16 @@ module Briey_Wrap (
    input wire                            rlast,
    input wire                            ruser,
    input wire                            rvalid,
-   output wire                           rready
+   output wire                           rready,
+
+  output logic [3:0] log_operation_mode,
+	output logic [5:0] log_awuser_reg,
+	output logic [63:0] log_write_base_addr,
+
+  input logic [63:0] stat_h0,
+  input logic [63:0] stat_d0,
+  input logic [63:0] stat_h1,
+  input logic [63:0] stat_d1
 
 );
 
@@ -211,7 +251,7 @@ module Briey_Wrap (
   logic         program_load_w_ready;
   logic [511:0] program_load_w_payload_data;
   logic  [63:0] program_load_w_payload_strb;
-
+  logic [5:0] briey_awuser, briey_aruser;
 
   logic [14:0] riscv_axi_awaddr, riscv_axi_araddr; // change address width to xx bits based on Briey memory size
   logic [63:0] physical_address_base; // change base address based on host memory map
@@ -224,6 +264,18 @@ module Briey_Wrap (
     .enable(enable),
     .physical_address_base(physical_address_base),
     .core_rst(core_rst),
+
+    .briey_aruser(briey_aruser),
+    .briey_awuser(briey_awuser),
+
+    .log_write_base_addr(log_write_base_addr),
+    .log_awuser_reg(log_awuser_reg),
+    .log_operation_mode(log_operation_mode),
+
+    .stat_h0(stat_h0),
+    .stat_h1(stat_h1),
+    .stat_d0(stat_d0),
+    .stat_d1(stat_d1),
 
     .program_load_en(program_load_en),
     .program_load_aw_valid(program_load_aw_valid),
@@ -361,47 +413,12 @@ module Briey_Wrap (
   );
 
 
-  // axil_ram #(
-  //   .ADDR_WIDTH       (10), // change based on Briey memory size
-  //   .DATA_WIDTH       (512)
-  // ) register_ram (
-  //   .clk        (axi4_mm_clk),
-  //   .rst        (!axi4_mm_rst_n),
-
-  //   // AXI write address channel
-  //   .s_axil_awvalid    (io_out_reg_axi_aw_valid),
-  //   .s_axil_awready    (io_out_reg_axi_aw_ready),
-  //   .s_axil_awaddr     (io_out_reg_axi_aw_payload_addr),
-
-  //   // AXIl write data channel
-  //   .s_axil_wvalid     (io_out_reg_axi_w_valid),
-  //   .s_axil_wready     (io_out_reg_axi_w_ready),
-  //   .s_axil_wdata      (io_out_reg_axi_w_payload_data),
-  //   .s_axil_wstrb      (io_out_reg_axi_w_payload_strb),
-
-  //   // AXIl write response channel
-  //   .s_axil_bvalid     (io_out_reg_axi_b_valid),
-  //   .s_axil_bready     (io_out_reg_axi_b_ready),
-  //   .s_axil_bresp      (io_out_reg_axi_b_payload_resp),
-  //   // AXIl read address channel
-  //   .s_axil_arvalid    (io_out_reg_axi_ar_valid),
-  //   .s_axil_arready    (io_out_reg_axi_ar_ready),
-  //   .s_axil_araddr     (io_out_reg_axi_ar_payload_addr),
-
-  //   .s_axil_rvalid     (io_out_reg_axi_r_valid),
-  //   .s_axil_rready     (io_out_reg_axi_r_ready),
-  //   .s_axil_rdata      (io_out_reg_axi_r_payload_data),
-  //   .s_axil_rresp      (io_out_reg_axi_r_payload_resp)
-  //   // AXI read data channel
-  // );
-
-
   assign awburst = 2'b00;
   assign awlock = 2'b00;
   assign awcache = 4'b0000;
   assign awprot = 3'b000;
   assign awqos = 0;
-  assign awuser = 0;
+  assign awuser = briey_awuser;
   assign awregion = 0;
   assign awatop = 0;
 
@@ -410,7 +427,7 @@ module Briey_Wrap (
   assign arcache = 4'b0000;
   assign arprot = 3'b000;
   assign arregion = 4'b0000;
-  assign aruser = 0;
+  assign aruser = briey_aruser;
   assign arqos = 0;
 endmodule
 
