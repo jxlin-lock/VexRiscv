@@ -42,6 +42,10 @@ initial begin
 
     # 80;   // de-reset core, run new program
     rst = 0;
+
+
+    repeat(1000) @(negedge clk);
+    $finish;
 end
 
 
@@ -205,6 +209,22 @@ end
         .s_axi_rvalid(axi_rvalid),
         .s_axi_rready(axi_rready)
     );
+
+
+    initial begin
+        # 800;
+        while(1) begin
+            @(posedge clk);
+            if(axi_awready && axi_awvalid) begin
+                // $display("[%10t] awaddr %016x", $time, axi_awaddr);
+            end
+
+            if(axi_wready && axi_wvalid) begin
+                // $display("[%10t] wdata  %016x", $time, axi_wdata);
+                $display("[%10t] wstrb  %016b", $time, axi_wstrb);
+            end
+        end
+    end
 
 endmodule
 
