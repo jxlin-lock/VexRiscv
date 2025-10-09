@@ -388,7 +388,7 @@ object BrieyWithMemoryInit{
       val toplevel = new Briey(BrieyConfig.default)
       // toplevel.axi.vgaCtrl.vga.ctrl.io.error.addAttribute(Verilator.public)
       // toplevel.axi.vgaCtrl.vga.ctrl.io.frameStart.addAttribute(Verilator.public)
-      HexTools.initRam(toplevel.axi.ram_reset_area.ram.ram, "src/main/ressource/hex/cxl_demo.hex", 0x80000000l)
+      HexTools.initRam(toplevel.axi.ram_reset_area.ram.ram, "src/main/ressource/hex/cxl_base.hex", 0x80000000l)
       toplevel
     })
   }

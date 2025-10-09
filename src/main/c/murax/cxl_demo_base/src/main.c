@@ -30,8 +30,8 @@ void main() {
 	ptr_cxl_mem = 0xA0000000;
 
 
-	int* accumulate; // CXL int array
-	accumulate = (int*)ptr_cxl_mem; // CXL memory address
+	uint8_t* accumulate; // CXL int array
+	accumulate = (uint8_t*)ptr_cxl_mem; // CXL memory address
 
 	int sum = 0;
 	for(int i = 0; i < 10; i++){

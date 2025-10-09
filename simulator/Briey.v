@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.12.0    git head : 1aa7d7b5732f11cca2dd83bacc2a4cb92ca8e5c9
 // Component : Briey
-// Git hash  : 921f08fa2ede2b625d3879d9373a4b4e1058eaba
+// Git hash  : 781b3ab47466da950d5c0172f3d0d1429891f35e
 
 `timescale 1ns/1ps
 
@@ -310,7 +310,8 @@ module Briey (
   wire                axi_ram_mux_cpu_arbiter_io_output_w_payload_last;
   wire                axi_ram_mux_cpu_arbiter_io_output_b_ready;
   wire                axi_ram_mux_cpu_arbiter_io_output_r_ready;
-  wire       [63:0]   _zz_dbus_axi_w_payload_strb;
+  wire       [126:0]  _zz_dbus_axi_w_payload_strb;
+  wire       [63:0]   _zz_dbus_axi_w_payload_strb_1;
   wire                cxl_axi_shared_arw_valid;
   wire                cxl_axi_shared_arw_ready;
   wire       [14:0]   cxl_axi_shared_arw_payload_addr;
@@ -533,6 +534,8 @@ module Briey (
   wire       [3:0]    dBusToAxi4Shared_dataStage_payload_mask;
   wire       [2:0]    dBusToAxi4Shared_dataStage_payload_size;
   wire                dBusToAxi4Shared_dataStage_payload_last;
+  wire       [3:0]    dBusToAxi4Shared_wordInLine;
+  wire       [5:0]    dBusToAxi4Shared_byteOffset;
   reg                 debug_resetOut_regNext;
   wire                debug_bus_cmd_fire;
   reg                 debug_bus_cmd_fire_regNext;
@@ -657,7 +660,8 @@ module Briey (
   reg                 io_output_w_s2mPipe_rData_last_1;
   wire                when_Stream_l399_4;
 
-  assign _zz_dbus_axi_w_payload_strb = {60'd0, dBusToAxi4Shared_dataStage_payload_mask};
+  assign _zz_dbus_axi_w_payload_strb = ({63'd0,_zz_dbus_axi_w_payload_strb_1} <<< dBusToAxi4Shared_byteOffset);
+  assign _zz_dbus_axi_w_payload_strb_1 = {60'd0, dBusToAxi4Shared_dataStage_payload_mask};
   (* keep_hierarchy = "TRUE" *) BufferCC_1 io_asyncReset_buffercc (
     .io_dataIn  (io_asyncReset                    ), //i
     .io_dataOut (io_asyncReset_buffercc_io_dataOut), //o
@@ -1415,7 +1419,9 @@ module Briey (
     dbus_axi_w_payload_data[511 : 480] = dBusToAxi4Shared_dataStage_payload_data;
   end
 
-  assign dbus_axi_w_payload_strb = (_zz_dbus_axi_w_payload_strb <<< (dBusToAxi4Shared_dataStage_payload_address & 32'h0000003f));
+  assign dBusToAxi4Shared_wordInLine = dBusToAxi4Shared_dataStage_payload_address[5 : 2];
+  assign dBusToAxi4Shared_byteOffset = ({2'd0,dBusToAxi4Shared_wordInLine} <<< 2'd2);
+  assign dbus_axi_w_payload_strb = _zz_dbus_axi_w_payload_strb[63:0];
   assign dbus_axi_w_payload_last = dBusToAxi4Shared_dataStage_payload_last;
   assign axi_core_cpu_dBus_rsp_payload_error = (! (dbus_axi_r_payload_resp == 2'b00));
   assign dbus_axi_r_ready = 1'b1;
@@ -10829,42 +10835,42 @@ module DataCache (
   wire                _zz_ways_0_dataReadRspMem;
   wire       [511:0]  ways_0_dataReadRspMem;
   wire       [31:0]   ways_0_dataReadRsp;
-  wire                when_DataCache_l648;
-  wire                when_DataCache_l651;
-  wire                when_DataCache_l670;
+  wire                when_DataCache_l653;
+  wire                when_DataCache_l656;
+  wire                when_DataCache_l675;
   wire                rspSync;
   wire                rspLast;
   reg                 memCmdSent;
   wire                io_mem_cmd_fire;
-  wire                when_DataCache_l692;
+  wire                when_DataCache_l697;
   reg        [3:0]    _zz_stage0_mask;
   wire       [3:0]    stage0_mask;
   wire       [9:0]    _zz_stage0_dataColisions;
   wire       [0:0]    stage0_dataColisions;
   wire       [0:0]    stage0_wayInvalidate;
   wire                stage0_isAmo;
-  wire                when_DataCache_l779;
+  wire                when_DataCache_l784;
   reg                 stageA_request_wr;
   reg        [1:0]    stageA_request_size;
   reg                 stageA_request_totalyConsistent;
-  wire                when_DataCache_l779_1;
+  wire                when_DataCache_l784_1;
   reg        [3:0]    stageA_mask;
   wire                stageA_isAmo;
   wire                stageA_isLrsc;
   wire       [0:0]    stageA_wayHits;
-  wire                when_DataCache_l779_2;
+  wire                when_DataCache_l784_2;
   reg        [0:0]    stageA_wayInvalidate;
-  wire                when_DataCache_l779_3;
+  wire                when_DataCache_l784_3;
   reg        [0:0]    stage0_dataColisions_regNextWhen;
   wire       [9:0]    _zz_stageA_dataColisions;
   wire       [0:0]    _zz_stageA_dataColisions_1;
   wire       [0:0]    stageA_dataColisions;
-  wire                when_DataCache_l830;
+  wire                when_DataCache_l835;
   reg                 stageB_request_wr;
   reg        [1:0]    stageB_request_size;
   reg                 stageB_request_totalyConsistent;
   reg                 stageB_mmuRspFreeze;
-  wire                when_DataCache_l832;
+  wire                when_DataCache_l837;
   reg        [31:0]   stageB_mmuRsp_physicalAddress;
   reg                 stageB_mmuRsp_isIoAccess;
   reg                 stageB_mmuRsp_isPaging;
@@ -10874,55 +10880,55 @@ module DataCache (
   reg                 stageB_mmuRsp_exception;
   reg                 stageB_mmuRsp_refilling;
   reg                 stageB_mmuRsp_bypassTranslation;
-  wire                when_DataCache_l829;
+  wire                when_DataCache_l834;
   reg                 stageB_tagsReadRsp_0_valid;
   reg                 stageB_tagsReadRsp_0_error;
   reg        [19:0]   stageB_tagsReadRsp_0_address;
-  wire                when_DataCache_l829_1;
+  wire                when_DataCache_l834_1;
   reg        [31:0]   stageB_dataReadRsp_0;
-  wire                when_DataCache_l828;
+  wire                when_DataCache_l833;
   reg        [0:0]    stageB_wayInvalidate;
   wire                stageB_consistancyHazard;
-  wire                when_DataCache_l828_1;
+  wire                when_DataCache_l833_1;
   reg        [0:0]    stageB_dataColisions;
-  wire                when_DataCache_l828_2;
+  wire                when_DataCache_l833_2;
   reg                 stageB_unaligned;
-  wire                when_DataCache_l828_3;
+  wire                when_DataCache_l833_3;
   reg        [0:0]    stageB_waysHitsBeforeInvalidate;
   wire       [0:0]    stageB_waysHits;
   wire                stageB_waysHit;
   wire       [31:0]   stageB_dataMux;
-  wire                when_DataCache_l828_4;
+  wire                when_DataCache_l833_4;
   reg        [3:0]    stageB_mask;
   reg                 stageB_loaderValid;
   wire       [31:0]   stageB_ioMemRspMuxed;
   reg                 stageB_flusher_waitDone;
   wire                stageB_flusher_hold;
   reg        [6:0]    stageB_flusher_counter;
-  wire                when_DataCache_l858;
-  wire                when_DataCache_l864;
-  wire                when_DataCache_l866;
+  wire                when_DataCache_l863;
+  wire                when_DataCache_l869;
+  wire                when_DataCache_l871;
   reg                 stageB_flusher_start;
-  wire                when_DataCache_l880;
+  wire                when_DataCache_l885;
   wire                stageB_isAmo;
   wire                stageB_isAmoCached;
   wire                stageB_isExternalLsrc;
   wire                stageB_isExternalAmo;
   wire       [31:0]   stageB_requestDataBypass;
   reg                 stageB_cpuWriteToCache;
-  wire                when_DataCache_l934;
+  wire                when_DataCache_l939;
   wire       [15:0]   _zz_7;
   wire                stageB_badPermissions;
   wire                stageB_loadStoreFault;
   wire                stageB_bypassCache;
-  wire                when_DataCache_l1003;
-  wire                when_DataCache_l1012;
+  wire                when_DataCache_l1008;
   wire                when_DataCache_l1017;
-  wire                when_DataCache_l1028;
-  wire                when_DataCache_l1040;
-  wire                when_DataCache_l999;
-  wire                when_DataCache_l1075;
-  wire                when_DataCache_l1084;
+  wire                when_DataCache_l1022;
+  wire                when_DataCache_l1033;
+  wire                when_DataCache_l1045;
+  wire                when_DataCache_l1004;
+  wire                when_DataCache_l1080;
+  wire                when_DataCache_l1089;
   reg                 loader_valid;
   reg                 loader_counter_willIncrement;
   wire                loader_counter_willClear;
@@ -10932,12 +10938,12 @@ module DataCache (
   reg                 loader_error;
   wire                loader_kill;
   reg                 loader_killReg;
-  wire                when_DataCache_l1100;
+  wire                when_DataCache_l1105;
   wire                loader_done;
-  wire                when_DataCache_l1128;
+  wire                when_DataCache_l1133;
   reg                 loader_valid_regNext;
-  wire                when_DataCache_l1132;
-  wire                when_DataCache_l1135;
+  wire                when_DataCache_l1137;
+  wire                when_DataCache_l1140;
   reg [21:0] ways_0_tags [0:63];
   reg [7:0] ways_0_data_symbol0 [0:63];
   reg [7:0] ways_0_data_symbol1 [0:63];
@@ -11441,14 +11447,14 @@ module DataCache (
 
   always @(*) begin
     _zz_1 = 1'b0;
-    if(when_DataCache_l651) begin
+    if(when_DataCache_l656) begin
       _zz_1 = 1'b1;
     end
   end
 
   always @(*) begin
     _zz_2 = 1'b0;
-    if(when_DataCache_l648) begin
+    if(when_DataCache_l653) begin
       _zz_2 = 1'b1;
     end
   end
@@ -11462,43 +11468,43 @@ module DataCache (
   assign _zz_ways_0_dataReadRspMem = (dataReadCmd_valid && (! io_cpu_memory_isStuck));
   assign ways_0_dataReadRspMem = ways_0_data_spinal_port0;
   assign ways_0_dataReadRsp = _zz_ways_0_dataReadRsp;
-  assign when_DataCache_l648 = (tagsWriteCmd_valid && tagsWriteCmd_payload_way[0]);
-  assign when_DataCache_l651 = (dataWriteCmd_valid && dataWriteCmd_payload_way[0]);
+  assign when_DataCache_l653 = (tagsWriteCmd_valid && tagsWriteCmd_payload_way[0]);
+  assign when_DataCache_l656 = (dataWriteCmd_valid && dataWriteCmd_payload_way[0]);
   always @(*) begin
     tagsReadCmd_valid = 1'b0;
-    if(when_DataCache_l670) begin
+    if(when_DataCache_l675) begin
       tagsReadCmd_valid = 1'b1;
     end
   end
 
   always @(*) begin
     tagsReadCmd_payload = 6'bxxxxxx;
-    if(when_DataCache_l670) begin
+    if(when_DataCache_l675) begin
       tagsReadCmd_payload = io_cpu_execute_address[11 : 6];
     end
   end
 
   always @(*) begin
     dataReadCmd_valid = 1'b0;
-    if(when_DataCache_l670) begin
+    if(when_DataCache_l675) begin
       dataReadCmd_valid = 1'b1;
     end
   end
 
   always @(*) begin
     dataReadCmd_payload = 6'bxxxxxx;
-    if(when_DataCache_l670) begin
+    if(when_DataCache_l675) begin
       dataReadCmd_payload = io_cpu_execute_address[11 : 6];
     end
   end
 
   always @(*) begin
     tagsWriteCmd_valid = 1'b0;
-    if(when_DataCache_l858) begin
+    if(when_DataCache_l863) begin
       tagsWriteCmd_valid = 1'b1;
     end
     if(io_cpu_writeBack_isValid) begin
-      if(when_DataCache_l1075) begin
+      if(when_DataCache_l1080) begin
         tagsWriteCmd_valid = 1'b0;
       end
     end
@@ -11509,7 +11515,7 @@ module DataCache (
 
   always @(*) begin
     tagsWriteCmd_payload_way = 1'bx;
-    if(when_DataCache_l858) begin
+    if(when_DataCache_l863) begin
       tagsWriteCmd_payload_way = 1'b1;
     end
     if(loader_done) begin
@@ -11519,7 +11525,7 @@ module DataCache (
 
   always @(*) begin
     tagsWriteCmd_payload_address = 6'bxxxxxx;
-    if(when_DataCache_l858) begin
+    if(when_DataCache_l863) begin
       tagsWriteCmd_payload_address = stageB_flusher_counter[5:0];
     end
     if(loader_done) begin
@@ -11529,7 +11535,7 @@ module DataCache (
 
   always @(*) begin
     tagsWriteCmd_payload_data_valid = 1'bx;
-    if(when_DataCache_l858) begin
+    if(when_DataCache_l863) begin
       tagsWriteCmd_payload_data_valid = 1'b0;
     end
     if(loader_done) begin
@@ -11554,16 +11560,16 @@ module DataCache (
   always @(*) begin
     dataWriteCmd_valid = 1'b0;
     if(stageB_cpuWriteToCache) begin
-      if(when_DataCache_l934) begin
+      if(when_DataCache_l939) begin
         dataWriteCmd_valid = 1'b1;
       end
     end
     if(io_cpu_writeBack_isValid) begin
-      if(when_DataCache_l1075) begin
+      if(when_DataCache_l1080) begin
         dataWriteCmd_valid = 1'b0;
       end
     end
-    if(when_DataCache_l1100) begin
+    if(when_DataCache_l1105) begin
       dataWriteCmd_valid = 1'b1;
     end
   end
@@ -11573,7 +11579,7 @@ module DataCache (
     if(stageB_cpuWriteToCache) begin
       dataWriteCmd_payload_way = stageB_waysHits;
     end
-    if(when_DataCache_l1100) begin
+    if(when_DataCache_l1105) begin
       dataWriteCmd_payload_way = loader_waysAllocator;
     end
   end
@@ -11583,7 +11589,7 @@ module DataCache (
     if(stageB_cpuWriteToCache) begin
       dataWriteCmd_payload_address = stageB_mmuRsp_physicalAddress[11 : 6];
     end
-    if(when_DataCache_l1100) begin
+    if(when_DataCache_l1105) begin
       dataWriteCmd_payload_address = stageB_mmuRsp_physicalAddress[11 : 6];
     end
   end
@@ -11608,7 +11614,7 @@ module DataCache (
       dataWriteCmd_payload_data[479 : 448] = stageB_requestDataBypass;
       dataWriteCmd_payload_data[511 : 480] = stageB_requestDataBypass;
     end
-    if(when_DataCache_l1100) begin
+    if(when_DataCache_l1105) begin
       dataWriteCmd_payload_data = io_mem_rsp_payload_data;
     end
   end
@@ -11666,15 +11672,15 @@ module DataCache (
         dataWriteCmd_payload_mask[63 : 60] = stageB_mask;
       end
     end
-    if(when_DataCache_l1100) begin
+    if(when_DataCache_l1105) begin
       dataWriteCmd_payload_mask = 64'hffffffffffffffff;
     end
   end
 
-  assign when_DataCache_l670 = (io_cpu_execute_isValid && (! io_cpu_memory_isStuck));
+  assign when_DataCache_l675 = (io_cpu_execute_isValid && (! io_cpu_memory_isStuck));
   always @(*) begin
     io_cpu_execute_haltIt = 1'b0;
-    if(when_DataCache_l858) begin
+    if(when_DataCache_l863) begin
       io_cpu_execute_haltIt = 1'b1;
     end
   end
@@ -11682,7 +11688,7 @@ module DataCache (
   assign rspSync = 1'b1;
   assign rspLast = 1'b1;
   assign io_mem_cmd_fire = (io_mem_cmd_valid && io_mem_cmd_ready);
-  assign when_DataCache_l692 = (! io_cpu_writeBack_isStuck);
+  assign when_DataCache_l697 = (! io_cpu_writeBack_isStuck);
   always @(*) begin
     _zz_stage0_mask = 4'bxxxx;
     case(io_cpu_execute_args_size)
@@ -11705,43 +11711,43 @@ module DataCache (
   assign stage0_dataColisions[0] = (((dataWriteCmd_valid && dataWriteCmd_payload_way[0]) && (dataWriteCmd_payload_address == _zz_stage0_dataColisions_1)) && ((stage0_mask & _zz_stage0_dataColisions_2) != 4'b0000));
   assign stage0_wayInvalidate = 1'b0;
   assign stage0_isAmo = 1'b0;
-  assign when_DataCache_l779 = (! io_cpu_memory_isStuck);
-  assign when_DataCache_l779_1 = (! io_cpu_memory_isStuck);
+  assign when_DataCache_l784 = (! io_cpu_memory_isStuck);
+  assign when_DataCache_l784_1 = (! io_cpu_memory_isStuck);
   assign io_cpu_memory_isWrite = stageA_request_wr;
   assign stageA_isAmo = 1'b0;
   assign stageA_isLrsc = 1'b0;
   assign stageA_wayHits = ((io_cpu_memory_mmuRsp_physicalAddress[31 : 12] == ways_0_tagsReadRsp_address) && ways_0_tagsReadRsp_valid);
-  assign when_DataCache_l779_2 = (! io_cpu_memory_isStuck);
-  assign when_DataCache_l779_3 = (! io_cpu_memory_isStuck);
+  assign when_DataCache_l784_2 = (! io_cpu_memory_isStuck);
+  assign when_DataCache_l784_3 = (! io_cpu_memory_isStuck);
   assign _zz_stageA_dataColisions = io_cpu_memory_address[11 : 2];
   assign _zz_stageA_dataColisions_1[0] = (((dataWriteCmd_valid && dataWriteCmd_payload_way[0]) && (dataWriteCmd_payload_address == _zz__zz_stageA_dataColisions_1)) && ((stageA_mask & _zz__zz_stageA_dataColisions_1_1) != 4'b0000));
   assign stageA_dataColisions = (stage0_dataColisions_regNextWhen | _zz_stageA_dataColisions_1);
-  assign when_DataCache_l830 = (! io_cpu_writeBack_isStuck);
+  assign when_DataCache_l835 = (! io_cpu_writeBack_isStuck);
   always @(*) begin
     stageB_mmuRspFreeze = 1'b0;
-    if(when_DataCache_l1135) begin
+    if(when_DataCache_l1140) begin
       stageB_mmuRspFreeze = 1'b1;
     end
   end
 
-  assign when_DataCache_l832 = ((! io_cpu_writeBack_isStuck) && (! stageB_mmuRspFreeze));
-  assign when_DataCache_l829 = (! io_cpu_writeBack_isStuck);
-  assign when_DataCache_l829_1 = (! io_cpu_writeBack_isStuck);
-  assign when_DataCache_l828 = (! io_cpu_writeBack_isStuck);
+  assign when_DataCache_l837 = ((! io_cpu_writeBack_isStuck) && (! stageB_mmuRspFreeze));
+  assign when_DataCache_l834 = (! io_cpu_writeBack_isStuck);
+  assign when_DataCache_l834_1 = (! io_cpu_writeBack_isStuck);
+  assign when_DataCache_l833 = (! io_cpu_writeBack_isStuck);
   assign stageB_consistancyHazard = 1'b0;
-  assign when_DataCache_l828_1 = (! io_cpu_writeBack_isStuck);
-  assign when_DataCache_l828_2 = (! io_cpu_writeBack_isStuck);
-  assign when_DataCache_l828_3 = (! io_cpu_writeBack_isStuck);
+  assign when_DataCache_l833_1 = (! io_cpu_writeBack_isStuck);
+  assign when_DataCache_l833_2 = (! io_cpu_writeBack_isStuck);
+  assign when_DataCache_l833_3 = (! io_cpu_writeBack_isStuck);
   assign stageB_waysHits = (stageB_waysHitsBeforeInvalidate & (~ stageB_wayInvalidate));
   assign stageB_waysHit = (|stageB_waysHits);
   assign stageB_dataMux = stageB_dataReadRsp_0;
-  assign when_DataCache_l828_4 = (! io_cpu_writeBack_isStuck);
+  assign when_DataCache_l833_4 = (! io_cpu_writeBack_isStuck);
   always @(*) begin
     stageB_loaderValid = 1'b0;
     if(io_cpu_writeBack_isValid) begin
       if(!stageB_isExternalAmo) begin
-        if(!when_DataCache_l999) begin
-          if(!when_DataCache_l1012) begin
+        if(!when_DataCache_l1004) begin
+          if(!when_DataCache_l1017) begin
             if(io_mem_cmd_ready) begin
               stageB_loaderValid = 1'b1;
             end
@@ -11750,7 +11756,7 @@ module DataCache (
       end
     end
     if(io_cpu_writeBack_isValid) begin
-      if(when_DataCache_l1075) begin
+      if(when_DataCache_l1080) begin
         stageB_loaderValid = 1'b0;
       end
     end
@@ -11761,13 +11767,13 @@ module DataCache (
     io_cpu_writeBack_haltIt = 1'b1;
     if(io_cpu_writeBack_isValid) begin
       if(!stageB_isExternalAmo) begin
-        if(when_DataCache_l999) begin
-          if(when_DataCache_l1003) begin
+        if(when_DataCache_l1004) begin
+          if(when_DataCache_l1008) begin
             io_cpu_writeBack_haltIt = 1'b0;
           end
         end else begin
-          if(when_DataCache_l1012) begin
-            if(when_DataCache_l1017) begin
+          if(when_DataCache_l1017) begin
+            if(when_DataCache_l1022) begin
               io_cpu_writeBack_haltIt = 1'b0;
             end
           end
@@ -11775,18 +11781,18 @@ module DataCache (
       end
     end
     if(io_cpu_writeBack_isValid) begin
-      if(when_DataCache_l1075) begin
+      if(when_DataCache_l1080) begin
         io_cpu_writeBack_haltIt = 1'b0;
       end
     end
   end
 
   assign stageB_flusher_hold = 1'b0;
-  assign when_DataCache_l858 = (! stageB_flusher_counter[6]);
-  assign when_DataCache_l864 = (! stageB_flusher_hold);
-  assign when_DataCache_l866 = (io_cpu_flush_valid && io_cpu_flush_payload_singleLine);
+  assign when_DataCache_l863 = (! stageB_flusher_counter[6]);
+  assign when_DataCache_l869 = (! stageB_flusher_hold);
+  assign when_DataCache_l871 = (io_cpu_flush_valid && io_cpu_flush_payload_singleLine);
   assign io_cpu_flush_ready = (stageB_flusher_waitDone && stageB_flusher_counter[6]);
-  assign when_DataCache_l880 = (io_cpu_flush_valid && io_cpu_flush_payload_singleLine);
+  assign when_DataCache_l885 = (io_cpu_flush_valid && io_cpu_flush_payload_singleLine);
   assign stageB_isAmo = 1'b0;
   assign stageB_isAmoCached = 1'b0;
   assign stageB_isExternalLsrc = 1'b0;
@@ -11796,8 +11802,8 @@ module DataCache (
     stageB_cpuWriteToCache = 1'b0;
     if(io_cpu_writeBack_isValid) begin
       if(!stageB_isExternalAmo) begin
-        if(!when_DataCache_l999) begin
-          if(when_DataCache_l1012) begin
+        if(!when_DataCache_l1004) begin
+          if(when_DataCache_l1017) begin
             stageB_cpuWriteToCache = 1'b1;
           end
         end
@@ -11805,7 +11811,7 @@ module DataCache (
     end
   end
 
-  assign when_DataCache_l934 = (stageB_request_wr && stageB_waysHit);
+  assign when_DataCache_l939 = (stageB_request_wr && stageB_waysHit);
   assign _zz_7 = ({15'd0,1'b1} <<< io_cpu_writeBack_address[5 : 2]);
   assign stageB_badPermissions = (((! stageB_mmuRsp_allowWrite) && stageB_request_wr) || ((! stageB_mmuRsp_allowRead) && ((! stageB_request_wr) || stageB_isAmo)));
   assign stageB_loadStoreFault = (io_cpu_writeBack_isValid && (stageB_mmuRsp_exception || stageB_badPermissions));
@@ -11813,9 +11819,9 @@ module DataCache (
     io_cpu_redo = 1'b0;
     if(io_cpu_writeBack_isValid) begin
       if(!stageB_isExternalAmo) begin
-        if(!when_DataCache_l999) begin
-          if(when_DataCache_l1012) begin
-            if(when_DataCache_l1028) begin
+        if(!when_DataCache_l1004) begin
+          if(when_DataCache_l1017) begin
+            if(when_DataCache_l1033) begin
               io_cpu_redo = 1'b1;
             end
           end
@@ -11823,11 +11829,11 @@ module DataCache (
       end
     end
     if(io_cpu_writeBack_isValid) begin
-      if(when_DataCache_l1084) begin
+      if(when_DataCache_l1089) begin
         io_cpu_redo = 1'b1;
       end
     end
-    if(when_DataCache_l1132) begin
+    if(when_DataCache_l1137) begin
       io_cpu_redo = 1'b1;
     end
   end
@@ -11848,15 +11854,15 @@ module DataCache (
     io_mem_cmd_valid = 1'b0;
     if(io_cpu_writeBack_isValid) begin
       if(!stageB_isExternalAmo) begin
-        if(when_DataCache_l999) begin
+        if(when_DataCache_l1004) begin
           io_mem_cmd_valid = (! memCmdSent);
         end else begin
-          if(when_DataCache_l1012) begin
+          if(when_DataCache_l1017) begin
             if(stageB_request_wr) begin
               io_mem_cmd_valid = 1'b1;
             end
           end else begin
-            if(when_DataCache_l1040) begin
+            if(when_DataCache_l1045) begin
               io_mem_cmd_valid = 1'b1;
             end
           end
@@ -11864,7 +11870,7 @@ module DataCache (
       end
     end
     if(io_cpu_writeBack_isValid) begin
-      if(when_DataCache_l1075) begin
+      if(when_DataCache_l1080) begin
         io_mem_cmd_valid = 1'b0;
       end
     end
@@ -11874,8 +11880,8 @@ module DataCache (
     io_mem_cmd_payload_address = stageB_mmuRsp_physicalAddress;
     if(io_cpu_writeBack_isValid) begin
       if(!stageB_isExternalAmo) begin
-        if(!when_DataCache_l999) begin
-          if(!when_DataCache_l1012) begin
+        if(!when_DataCache_l1004) begin
+          if(!when_DataCache_l1017) begin
             io_mem_cmd_payload_address[5 : 0] = 6'h0;
           end
         end
@@ -11888,8 +11894,8 @@ module DataCache (
     io_mem_cmd_payload_wr = stageB_request_wr;
     if(io_cpu_writeBack_isValid) begin
       if(!stageB_isExternalAmo) begin
-        if(!when_DataCache_l999) begin
-          if(!when_DataCache_l1012) begin
+        if(!when_DataCache_l1004) begin
+          if(!when_DataCache_l1017) begin
             io_mem_cmd_payload_wr = 1'b0;
           end
         end
@@ -11904,8 +11910,8 @@ module DataCache (
     io_mem_cmd_payload_size = {1'd0, stageB_request_size};
     if(io_cpu_writeBack_isValid) begin
       if(!stageB_isExternalAmo) begin
-        if(!when_DataCache_l999) begin
-          if(!when_DataCache_l1012) begin
+        if(!when_DataCache_l1004) begin
+          if(!when_DataCache_l1017) begin
             io_mem_cmd_payload_size = 3'b110;
           end
         end
@@ -11915,12 +11921,12 @@ module DataCache (
 
   assign stageB_bypassCache = ((stageB_mmuRsp_isIoAccess || stageB_isExternalLsrc) || stageB_isExternalAmo);
   assign io_cpu_writeBack_keepMemRspData = 1'b0;
-  assign when_DataCache_l1003 = ((! stageB_request_wr) ? (io_mem_rsp_valid && rspSync) : io_mem_cmd_ready);
-  assign when_DataCache_l1012 = (stageB_waysHit || (stageB_request_wr && (! stageB_isAmoCached)));
-  assign when_DataCache_l1017 = ((! stageB_request_wr) || io_mem_cmd_ready);
-  assign when_DataCache_l1028 = (((! stageB_request_wr) || stageB_isAmoCached) && ((stageB_dataColisions & stageB_waysHits) != 1'b0));
-  assign when_DataCache_l1040 = (! memCmdSent);
-  assign when_DataCache_l999 = (stageB_mmuRsp_isIoAccess || stageB_isExternalLsrc);
+  assign when_DataCache_l1008 = ((! stageB_request_wr) ? (io_mem_rsp_valid && rspSync) : io_mem_cmd_ready);
+  assign when_DataCache_l1017 = (stageB_waysHit || (stageB_request_wr && (! stageB_isAmoCached)));
+  assign when_DataCache_l1022 = ((! stageB_request_wr) || io_mem_cmd_ready);
+  assign when_DataCache_l1033 = (((! stageB_request_wr) || stageB_isAmoCached) && ((stageB_dataColisions & stageB_waysHits) != 1'b0));
+  assign when_DataCache_l1045 = (! memCmdSent);
+  assign when_DataCache_l1004 = (stageB_mmuRsp_isIoAccess || stageB_isExternalLsrc);
   always @(*) begin
     if(stageB_bypassCache) begin
       io_cpu_writeBack_data = stageB_ioMemRspMuxed;
@@ -11929,11 +11935,11 @@ module DataCache (
     end
   end
 
-  assign when_DataCache_l1075 = ((((stageB_consistancyHazard || stageB_mmuRsp_refilling) || io_cpu_writeBack_accessError) || io_cpu_writeBack_mmuException) || io_cpu_writeBack_unalignedAccess);
-  assign when_DataCache_l1084 = (stageB_mmuRsp_refilling || stageB_consistancyHazard);
+  assign when_DataCache_l1080 = ((((stageB_consistancyHazard || stageB_mmuRsp_refilling) || io_cpu_writeBack_accessError) || io_cpu_writeBack_mmuException) || io_cpu_writeBack_unalignedAccess);
+  assign when_DataCache_l1089 = (stageB_mmuRsp_refilling || stageB_consistancyHazard);
   always @(*) begin
     loader_counter_willIncrement = 1'b0;
-    if(when_DataCache_l1100) begin
+    if(when_DataCache_l1105) begin
       loader_counter_willIncrement = 1'b1;
     end
   end
@@ -11942,12 +11948,12 @@ module DataCache (
   assign loader_counter_willOverflowIfInc = 1'b1;
   assign loader_counter_willOverflow = (loader_counter_willOverflowIfInc && loader_counter_willIncrement);
   assign loader_kill = 1'b0;
-  assign when_DataCache_l1100 = ((loader_valid && io_mem_rsp_valid) && rspLast);
+  assign when_DataCache_l1105 = ((loader_valid && io_mem_rsp_valid) && rspLast);
   assign loader_done = loader_counter_willOverflow;
-  assign when_DataCache_l1128 = (! loader_valid);
-  assign when_DataCache_l1132 = (loader_valid && (! loader_valid_regNext));
+  assign when_DataCache_l1133 = (! loader_valid);
+  assign when_DataCache_l1137 = (loader_valid && (! loader_valid_regNext));
   assign io_cpu_execute_refilling = loader_valid;
-  assign when_DataCache_l1135 = (stageB_loaderValid || loader_valid);
+  assign when_DataCache_l1140 = (stageB_loaderValid || loader_valid);
   always @(posedge io_axiClk) begin
     tagsWriteLastCmd_valid <= tagsWriteCmd_valid;
     tagsWriteLastCmd_payload_way <= tagsWriteCmd_payload_way;
@@ -11955,26 +11961,26 @@ module DataCache (
     tagsWriteLastCmd_payload_data_valid <= tagsWriteCmd_payload_data_valid;
     tagsWriteLastCmd_payload_data_error <= tagsWriteCmd_payload_data_error;
     tagsWriteLastCmd_payload_data_address <= tagsWriteCmd_payload_data_address;
-    if(when_DataCache_l779) begin
+    if(when_DataCache_l784) begin
       stageA_request_wr <= io_cpu_execute_args_wr;
       stageA_request_size <= io_cpu_execute_args_size;
       stageA_request_totalyConsistent <= io_cpu_execute_args_totalyConsistent;
     end
-    if(when_DataCache_l779_1) begin
+    if(when_DataCache_l784_1) begin
       stageA_mask <= stage0_mask;
     end
-    if(when_DataCache_l779_2) begin
+    if(when_DataCache_l784_2) begin
       stageA_wayInvalidate <= stage0_wayInvalidate;
     end
-    if(when_DataCache_l779_3) begin
+    if(when_DataCache_l784_3) begin
       stage0_dataColisions_regNextWhen <= stage0_dataColisions;
     end
-    if(when_DataCache_l830) begin
+    if(when_DataCache_l835) begin
       stageB_request_wr <= stageA_request_wr;
       stageB_request_size <= stageA_request_size;
       stageB_request_totalyConsistent <= stageA_request_totalyConsistent;
     end
-    if(when_DataCache_l832) begin
+    if(when_DataCache_l837) begin
       stageB_mmuRsp_physicalAddress <= io_cpu_memory_mmuRsp_physicalAddress;
       stageB_mmuRsp_isIoAccess <= io_cpu_memory_mmuRsp_isIoAccess;
       stageB_mmuRsp_isPaging <= io_cpu_memory_mmuRsp_isPaging;
@@ -11985,27 +11991,27 @@ module DataCache (
       stageB_mmuRsp_refilling <= io_cpu_memory_mmuRsp_refilling;
       stageB_mmuRsp_bypassTranslation <= io_cpu_memory_mmuRsp_bypassTranslation;
     end
-    if(when_DataCache_l829) begin
+    if(when_DataCache_l834) begin
       stageB_tagsReadRsp_0_valid <= ways_0_tagsReadRsp_valid;
       stageB_tagsReadRsp_0_error <= ways_0_tagsReadRsp_error;
       stageB_tagsReadRsp_0_address <= ways_0_tagsReadRsp_address;
     end
-    if(when_DataCache_l829_1) begin
+    if(when_DataCache_l834_1) begin
       stageB_dataReadRsp_0 <= ways_0_dataReadRsp;
     end
-    if(when_DataCache_l828) begin
+    if(when_DataCache_l833) begin
       stageB_wayInvalidate <= stageA_wayInvalidate;
     end
-    if(when_DataCache_l828_1) begin
+    if(when_DataCache_l833_1) begin
       stageB_dataColisions <= stageA_dataColisions;
     end
-    if(when_DataCache_l828_2) begin
+    if(when_DataCache_l833_2) begin
       stageB_unaligned <= (|{((stageA_request_size == 2'b10) && (io_cpu_memory_address[1 : 0] != 2'b00)),((stageA_request_size == 2'b01) && (io_cpu_memory_address[0 : 0] != 1'b0))});
     end
-    if(when_DataCache_l828_3) begin
+    if(when_DataCache_l833_3) begin
       stageB_waysHitsBeforeInvalidate <= stageA_wayHits;
     end
-    if(when_DataCache_l828_4) begin
+    if(when_DataCache_l833_4) begin
       stageB_mask <= stageA_mask;
     end
     loader_valid_regNext <= loader_valid;
@@ -12025,16 +12031,16 @@ module DataCache (
       if(io_mem_cmd_fire) begin
         memCmdSent <= 1'b1;
       end
-      if(when_DataCache_l692) begin
+      if(when_DataCache_l697) begin
         memCmdSent <= 1'b0;
       end
       if(io_cpu_flush_ready) begin
         stageB_flusher_waitDone <= 1'b0;
       end
-      if(when_DataCache_l858) begin
-        if(when_DataCache_l864) begin
+      if(when_DataCache_l863) begin
+        if(when_DataCache_l869) begin
           stageB_flusher_counter <= (stageB_flusher_counter + 7'h01);
-          if(when_DataCache_l866) begin
+          if(when_DataCache_l871) begin
             stageB_flusher_counter[6] <= 1'b1;
           end
         end
@@ -12043,16 +12049,16 @@ module DataCache (
       if(stageB_flusher_start) begin
         stageB_flusher_waitDone <= 1'b1;
         stageB_flusher_counter <= 7'h0;
-        if(when_DataCache_l880) begin
+        if(when_DataCache_l885) begin
           stageB_flusher_counter <= {1'b0,io_cpu_flush_payload_lineId};
         end
       end
       `ifndef SYNTHESIS
         `ifdef FORMAL
-          assert((! ((io_cpu_writeBack_isValid && (! io_cpu_writeBack_haltIt)) && io_cpu_writeBack_isStuck))); // DataCache.scala:L1087
+          assert((! ((io_cpu_writeBack_isValid && (! io_cpu_writeBack_haltIt)) && io_cpu_writeBack_isStuck))); // DataCache.scala:L1092
         `else
           if(!(! ((io_cpu_writeBack_isValid && (! io_cpu_writeBack_haltIt)) && io_cpu_writeBack_isStuck))) begin
-            $display("ERROR writeBack stuck by another plugin is not allowed"); // DataCache.scala:L1087
+            $display("ERROR writeBack stuck by another plugin is not allowed"); // DataCache.scala:L1092
           end
         `endif
       `endif
@@ -12062,7 +12068,7 @@ module DataCache (
       if(loader_kill) begin
         loader_killReg <= 1'b1;
       end
-      if(when_DataCache_l1100) begin
+      if(when_DataCache_l1105) begin
         loader_error <= (loader_error || io_mem_rsp_payload_error);
       end
       if(loader_done) begin
@@ -12070,7 +12076,7 @@ module DataCache (
         loader_error <= 1'b0;
         loader_killReg <= 1'b0;
       end
-      if(when_DataCache_l1128) begin
+      if(when_DataCache_l1133) begin
         loader_waysAllocator <= _zz_loader_waysAllocator[0:0];
       end
     end

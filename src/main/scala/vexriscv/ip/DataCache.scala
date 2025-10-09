@@ -308,7 +308,12 @@ case class DataCacheMemBus(p : DataCacheConfig) extends Bundle with IMasterSlave
     // axi.writeData.strb := dataStage.mask
     // see https://github.com/SpinalHDL/VexRiscv/issues/134
     axi.writeData.data.subdivideIn(32 bits).foreach(_ := dataStage.data )
-    axi.writeData.strb := dataStage.mask.resize(64) |<< (dataStage.address & 0x3F)
+    // axi.writeData.strb := dataStage.mask.resize(64)
+    // Extract the parts of the address offset
+    val wordInLine = dataStage.address(5 downto 2)
+    val byteOffset = wordInLine << 2
+    axi.writeData.strb := (dataStage.mask.resize(64) << byteOffset).resize(64)
+
     axi.writeData.last := dataStage.last
 
     rsp.valid := axi.r.valid
