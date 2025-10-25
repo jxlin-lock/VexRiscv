@@ -125,8 +125,8 @@ object BrieyConfig{
           executeInsertion = true
         ),
         new FullBarrelShifterPlugin,
-        new MulPlugin,
-        new DivPlugin,
+        // new MulPlugin,
+        // new DivPlugin,
         new HazardSimplePlugin(
           bypassExecute           = true,
           bypassMemory            = true,
@@ -155,7 +155,7 @@ object BrieyConfig{
             mscratchGen    = false,
             mcauseAccess   = CsrAccess.READ_ONLY,
             mbadaddrAccess = CsrAccess.READ_ONLY,
-            mcycleAccess   = CsrAccess.NONE,
+            mcycleAccess   = CsrAccess.READ_ONLY,
             minstretAccess = CsrAccess.NONE,
             ecallGen       = false,
             wfiGenAsWait         = false,
@@ -183,7 +183,7 @@ class Briey(val config: BrieyConfig) extends Component{
   val debug = true
   val interruptCount = 4
   def vgaRgbConfig = RgbConfig(5,6,5)
-  val CXL_RAM_SIZE = 32 kB // CXL RAM size
+  val CXL_RAM_SIZE = 524288 kB // CXL RAM size
   val axiConfig = Axi4SharedOnChipRam.getAxiConfig(512,CXL_RAM_SIZE,12)
   val regaxiConfig = Axi4SharedOnChipRam.getAxiConfig(512,1 kB,0)
   val onchipaxiConfig = Axi4SharedOnChipRam.getAxiConfig(512,onChipRamSize,4)
