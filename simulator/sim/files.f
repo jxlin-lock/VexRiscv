@@ -1,0 +1,10 @@
+#-nologo
+#-quiet
+-sv
++define+SIMULATION
+/home/wchen/cxl_cache/cxl_cache_type2_ip_gen/hardware_test_design/vexriscv/simulator/sim/riscv_bench.sv
+/home/wchen/cxl_cache/cxl_cache_type2_ip_gen/hardware_test_design/vexriscv/simulator/Briey_wrap.sv
+/home/wchen/cxl_cache/cxl_cache_type2_ip_gen/hardware_test_design/vexriscv/simulator/Briey.v
+/home/wchen/cxl_cache/cxl_cache_type2_ip_gen/hardware_test_design/vexriscv/simulator/tb_briey.sv
+/home/wchen/cxl_cache/cxl_cache_type2_ip_gen/hardware_test_design/vexriscv/simulator/ram_cache.sv
+/home/wchen/cxl_cache/cxl_cache_type2_ip_gen/hardware_test_design/user_logic/axi_bus_interface.sv
