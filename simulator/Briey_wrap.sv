@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-
+`define SYNTHESIS
 module Briey_axil_cfg (
     input logic clk,
     input logic rstn,
@@ -28,6 +28,13 @@ module Briey_axil_cfg (
     input dbg_h0_rdy,
     input dbg_h1_rdy,
     input dbg_axi_rdy,
+
+    input logic [63:0] DEBUG_axi_aw,
+    input logic [63:0] DEBUG_axi_w,
+    input logic [63:0] DEBUG_axi_b,
+
+    input logic [63:0] DEBUG_axi_ar,
+    input logic [63:0] DEBUG_axi_r,
 
     output logic program_load_en,
     output logic program_load_aw_valid,
@@ -75,7 +82,7 @@ module Briey_axil_cfg (
 		if(axil_state == AXIL_IDLE) begin
 			case(axil.araddr)
 				'h00: axil.rdata <= 64'ha0a1a2a3__deadbeef;
-        'h10: axil.rdata <= {63'h0, enable};
+        'h10: axil.rdata <= {63'h0, enable, core_rst};
         'h20: axil.rdata <= physical_address_base;
         'h60: axil.rdata <= load_w_payload_data_idx;
         'h80: axil.rdata <= {load_aw_valid, load_w_valid};
@@ -85,6 +92,12 @@ module Briey_axil_cfg (
         'hb0: axil.rdata <= {dbg_h0_rdy, dbg_h1_rdy, dbg_axi_rdy, ctrl_clear_counter, ctrl_ready, ctrl_enable};
         'hc0: axil.rdata <= h0_counter;
         'hd0: axil.rdata <= h1_counter;
+
+        'he0: axil.rdata <= DEBUG_axi_aw;
+        'hf0: axil.rdata <= DEBUG_axi_w;
+        'h100: axil.rdata <= DEBUG_axi_b;
+        'h110: axil.rdata <= DEBUG_axi_ar;
+        'h130: axil.rdata <= DEBUG_axi_r;
 
         'h120: axil.rdata <= {briey_aruser[1], briey_aruser[0], briey_awuser[1], briey_awuser[0]};
 				default: axil.rdata <= 64'hdeaddead__deaddead;
@@ -104,7 +117,7 @@ module Briey_axil_cfg (
 		if(!rstn) begin
 			enable <= 0;
       physical_address_base <= 0;
-      core_rst <= 0;
+      core_rst <= 1;
 
       ctrl_enable <= 0;
       ctrl_base_h0 <= 0;
@@ -242,6 +255,7 @@ module cxl_briey_axi(
   input logic [9:0]                briey_arlen,
   input logic [2:0]                briey_arsize,
   input logic [1:0][5:0]           briey_aruser,
+  input logic [1:0]                briey_arburst,
   input logic                      briey_arvalid,
   output logic                      briey_arready,
 
@@ -312,119 +326,126 @@ module cxl_briey_axi(
   // logic _briey_arready, _briey_rvalid;
   // logic _arvalid, _rready;
 
-  // axi_id_rewrite axi_id_W (
-  //   .clk(clk),
-  //   .rstn(rstn),
-  //   .slave_aXvalid(briey_awvalid),
-  //   .slave_aXid(briey_awid),
-  //   .slave_aXready(_briey_awready),
-  //   .slave_Xvalid(_briey_bvalid),
-  //   .slave_Xid(briey_bid),
-  //   .slave_Xready(briey_bready),
-  //   .master_aXvalid(_awvalid),
-  //   .master_aXid(awid),
-  //   .master_aXready(awready),
-  //   .master_Xvalid(bvalid),
-  //   .master_Xid(bid),
-  //   .master_Xready(_bready)
-  // );
+  axi_id_rewrite axi_id_W (
+    .clk(clk),
+    .rstn(rstn),
+    .slave_aXvalid(briey_awvalid),
+    .slave_aXid(briey_awid),
+    .slave_aXready(briey_awready),
+    .slave_Xvalid(briey_bvalid),
+    .slave_Xid(briey_bid),
+    .slave_Xready(briey_bready),
+    .master_aXvalid(awvalid),
+    .master_aXid(awid),
+    .master_aXready(awready),
+    .master_Xvalid(bvalid),
+    .master_Xid(bid),
+    .master_Xready(bready)
+  );
 
-  // axi_id_rewrite axi_id_R (
-  //   .clk(clk),
-  //   .rstn(rstn),
-  //   .slave_aXvalid(briey_arvalid),
-  //   .slave_aXid(briey_arid),
-  //   .slave_aXready(_briey_arready),
-  //   .slave_Xvalid(_briey_rvalid),
-  //   .slave_Xid(briey_rid),
-  //   .slave_Xready(briey_rready),
-  //   .master_aXvalid(_arvalid),
-  //   .master_aXid(arid),
-  //   .master_aXready(arready),
-  //   .master_Xvalid(rvalid),
-  //   .master_Xid(rid),
-  //   .master_Xready(_rready)
-  // );
+  axi_id_rewrite axi_id_R (
+    .clk(clk),
+    .rstn(rstn),
+    .slave_aXvalid(briey_arvalid),
+    .slave_aXid(briey_arid),
+    .slave_aXready(briey_arready),
+    .slave_Xvalid(briey_rvalid),
+    .slave_Xid(briey_rid),
+    .slave_Xready(briey_rready),
+    .master_aXvalid(arvalid),
+    .master_aXid(arid),
+    .master_aXready(arready),
+    .master_Xvalid(rvalid),
+    .master_Xid(rid),
+    .master_Xready(rready)
+  );
 
-  // assign awvalid      = _awvalid      && enable;
-  // assign wvalid       = briey_wvalid  && enable;
-  // assign briey_bvalid = _briey_bvalid && enable; // TODO
-  // assign arvalid      = _arvalid      && enable;
-  // assign briey_rvalid = _briey_rvalid && enable; // TODO
-
-  // assign briey_awready  = _briey_awready  && enable;
-  // assign briey_wready   = briey_wready    && enable;
-  // assign bready         = _bready         || ! enable;
-  // assign briey_arready  = _briey_arready  && enable;
-  // assign rready         = _rready         || ! enable;
-
-
-  assign awvalid      = briey_awvalid      && enable;
-  assign wvalid       = briey_wvalid  && enable;
-  assign briey_bvalid = bvalid && enable; // TODO
-  assign arvalid      = briey_arvalid      && enable;
-  assign briey_rvalid = rvalid && enable; // TODO
-
-  assign briey_awready  = awready  && enable;
-  assign briey_wready   = wready    && enable;
-  assign bready         = briey_bready         || ! enable;
-  assign briey_arready  = arready  && enable;
-  assign rready         = briey_rready         || ! enable;
-
-
-  assign awlen = 0;
-  assign awsize = 3'b110;
-  assign awburst  = 2'b00;
-  assign awlock   = 2'b00;
-  assign awcache  = 4'b0000;
-  assign awprot   = 3'b000;
-  assign awqos    = 0;
-  assign awuser   = (briey_awaddr >= 'h8000) ? briey_awuser[1] : briey_awuser[0];
-  assign awregion = 0;
-  assign awatop   = 0;
-  
-  assign wuser = 0;
-  assign wdata = briey_wdata;
-  assign wstrb = briey_wstrb;
-  assign wlast = 1;
-
-  assign arlen = 0;
-  assign arsize = 3'b110;
-  assign arburst  = 2'b00;
-  assign arlock   = 2'b00;
-  assign arcache  = 4'b0000;
-  assign arprot   = 3'b000;
-  assign arregion = 4'b0000;
-  assign aruser   = (briey_araddr >= 'h8000) ? briey_aruser[1][4:0] : briey_aruser[0][4:0];
-  assign arqos    = 0;
 
   assign awaddr = physical_address_base + briey_awaddr; // byte address
   assign araddr = physical_address_base + briey_araddr; // byte address
 
 
-  assign awid = briey_awid;
-  assign arid = briey_arid;
-  assign briey_bid = bid;
+  // assign awid = briey_awid;
+  // assign awaddr = briey_awaddr; 
+  assign awlen = 0; // briey_awlen;
+  assign awsize = 3'b110; // briey_awsize;
+  assign awburst = 0; // TODO: briey_awburst; TODO: why briey burst is 01
+  assign awprot = 0; // briey_awprot;
+  assign awqos = 0; // briey_awqos;
+  assign awuser = (briey_awaddr >= 'h8000) ? briey_awuser[1] : briey_awuser[0];
+  // assign awvalid = briey_awvalid;
+  assign awcache = 0; // briey_awcache;
+  assign awlock = 0; // briey_awlock;
+  assign awregion = 0; // briey_awregion;
+  assign awatop = 0; // briey_awatop;
+  
+
+  assign wdata = briey_wdata;
+  assign wstrb = briey_wstrb;
+  assign wlast = briey_wlast;
+  assign wuser = 0;
+  assign wvalid = briey_wvalid;
+  
+  // assign bready = briey_bready;
+  
+  // assign arid = briey_arid;
+  // assign araddr = briey_araddr;
+  assign arlen = 0; // briey_arlen;
+  assign arsize = 3'b110; // briey_arsize;
+  assign arburst = 0; // briey_arburst;
+  assign arprot = 0; // briey_arprot;
+  assign arqos = 0; // briey_arqos;
+  assign aruser = (briey_araddr >= 'h8000) ? briey_aruser[1] : briey_aruser[0];
+  // assign arvalid = briey_arvalid;
+  assign arcache = 0; // briey_arcache;
+  assign arlock = 0; // briey_arlock;
+  assign arregion = 0; // briey_arregion;
+
+
+  // assign rready = briey_rready;
+
+
+
+
+  // assign briey_awready = awready;
+  assign briey_wready = wready;
+
+  // assign briey_bid = bid;
+  assign briey_bresp = bresp;
+  // assign briey_bvalid = bvalid;
+  
+  // assign briey_arready = arready;
+
+  // assign briey_rid = rid;
+  assign briey_rdata = rdata;
+  assign briey_rresp = rresp;
+  assign briey_rlast = rlast;
+  // assign briey_rvalid = rvalid;
+
+
   always_ff @(posedge clk) begin
-    assert(briey_arlen[7:0] == 0) else begin
-      $error("briey_arlen %0b", briey_arlen);
-    end
-    assert(briey_arsize == 3'b110) else begin
-      $error("briey_arsize %0d", briey_arsize);
-    end
-    assert(briey_awlen[7:0] == 0) else begin
-      $error("brie_awlen %0d", briey_awlen);
-    end
+    if(rstn) begin
+      assert(briey_arlen[7:0] == 0) else begin
+        $error("briey_arlen %0b", briey_arlen);
+      end
+      assert(briey_arsize == 3'b110) else begin
+        $error("briey_arsize %0d", briey_arsize);
+      end
+      assert(briey_awlen[7:0] == 0) else begin
+        $error("brie_awlen %0d", briey_awlen);
+      end
 
-    assert(briey_awsize == 3'b110) else begin
-      $error("briey_awsize %0d", briey_awsize);
-    end
+      assert(briey_awsize == 3'b110) else begin
+        $error("briey_awsize %0d", briey_awsize);
+      end
 
-    assert(briey_wlast == 1) else begin
-      $error("briey_wlast %0d", briey_wlast);
+      assert(briey_wlast == 1) else begin
+        $error("briey_wlast %0d", briey_wlast);
+      end
     end
   end
 endmodule
+
 module Briey_Wrap (
   input logic  axi4_mm_clk, 
   input logic  axi4_mm_rst_n,
@@ -528,6 +549,7 @@ module Briey_Wrap (
   logic [1:0][5:0]           briey_aruser;
   logic                      briey_arvalid;
   logic                      briey_arready;
+  logic [1:0]                briey_arburst;
 
   logic [11:0]               briey_rid;
   logic [511:0]              briey_rdata;
@@ -548,6 +570,14 @@ module Briey_Wrap (
   logic [ 63:0] physical_address_base; // change base address based on host memory map
   logic enable, core_rst;
 
+
+  logic [63:0] DEBUG_axi_aw;
+  logic [63:0] DEBUG_axi_w;
+  logic [63:0] DEBUG_axi_b;
+
+  logic [63:0] DEBUG_axi_ar;
+  logic [63:0] DEBUG_axi_r;
+  
   Briey_axil_cfg Briey_axil_cfg_inst(
     .clk(axi4_mm_clk),
     .rstn(axi4_mm_rst_n),
@@ -573,6 +603,13 @@ module Briey_Wrap (
     .dbg_h1_rdy(dbg_h1_rdy),
     .dbg_axi_rdy(dbg_axi_rdy),
 
+    .DEBUG_axi_aw(DEBUG_axi_aw),
+    .DEBUG_axi_w(DEBUG_axi_w),
+    .DEBUG_axi_b(DEBUG_axi_b),
+
+    .DEBUG_axi_ar(DEBUG_axi_ar),
+    .DEBUG_axi_r(DEBUG_axi_r),
+
     .program_load_en(program_load_en),
     .program_load_aw_valid(program_load_aw_valid),
     .program_load_aw_ready(program_load_aw_ready),
@@ -584,33 +621,8 @@ module Briey_Wrap (
   );
 
 
-
-  logic          io_out_reg_axi_aw_valid;
-  logic          io_out_reg_axi_aw_ready;
-  logic [9:0]    io_out_reg_axi_aw_payload_addr;
-
-  logic          io_out_reg_axi_ar_valid;
-  logic          io_out_reg_axi_ar_ready;
-  logic [9:0]    io_out_reg_axi_ar_payload_addr;
-
-  logic          io_out_reg_axi_w_valid;
-  logic          io_out_reg_axi_w_ready;
-  logic [511:0]  io_out_reg_axi_w_payload_data;
-  logic [63:0]   io_out_reg_axi_w_payload_strb;
-
-  logic          io_out_reg_axi_b_valid;
-  logic          io_out_reg_axi_b_ready;
-  logic [1:0]    io_out_reg_axi_b_payload_resp;
-
-  logic          io_out_reg_axi_r_valid;
-  logic          io_out_reg_axi_r_ready;
-  logic [511:0]  io_out_reg_axi_r_payload_data;
-  logic [1:0]    io_out_reg_axi_r_payload_resp;
-
-
-
-  Briey Briey_inst (
-    .io_asyncReset (!axi4_mm_rst_n | core_rst),
+  Briey briey_inst (
+    .io_asyncReset (!axi4_mm_rst_n || core_rst),
     .io_axiClk (axi4_mm_clk),
     .io_vgaClk (axi4_mm_clk),
     .io_jtag_tms (1'b0),
@@ -622,54 +634,36 @@ module Briey_Wrap (
 
     .io_out_cxl_axi_aw_valid(briey_awvalid),
     .io_out_cxl_axi_aw_ready(briey_awready),
-    .io_out_cxl_axi_aw_payload_addr(briey_awaddr), // RISVcore address range 14bits 
+    .io_out_cxl_axi_aw_payload_addr(briey_awaddr),
     .io_out_cxl_axi_aw_payload_id(briey_awid),
-    .io_out_cxl_axi_aw_payload_len(briey_awlen), // TODO: change len width based on Briey
+    .io_out_cxl_axi_aw_payload_len(briey_awlen),
     .io_out_cxl_axi_aw_payload_size(briey_awsize),
-    .io_out_cxl_axi_aw_payload_burst(briey_awburst), // ignored since len is always 0
-
+    .io_out_cxl_axi_aw_payload_burst(briey_awburst),
+    
     .io_out_cxl_axi_w_valid(briey_wvalid),
     .io_out_cxl_axi_w_ready(briey_wready),
     .io_out_cxl_axi_w_payload_data(briey_wdata),
     .io_out_cxl_axi_w_payload_strb(briey_wstrb),
     .io_out_cxl_axi_w_payload_last(briey_wlast),
+    
     .io_out_cxl_axi_b_valid(briey_bvalid),
     .io_out_cxl_axi_b_ready(briey_bready),
     .io_out_cxl_axi_b_payload_id(briey_bid),
     .io_out_cxl_axi_b_payload_resp(briey_bresp),
-
+    
     .io_out_cxl_axi_ar_valid(briey_arvalid),
     .io_out_cxl_axi_ar_ready(briey_arready),
     .io_out_cxl_axi_ar_payload_addr(briey_araddr),
-    .io_out_cxl_axi_ar_payload_id(briey_arid), 
-    .io_out_cxl_axi_ar_payload_len(briey_arlen), // TODO: change len width based on Briey
+    .io_out_cxl_axi_ar_payload_id(briey_arid),
+    .io_out_cxl_axi_ar_payload_len(briey_arlen),
     .io_out_cxl_axi_ar_payload_size(briey_arsize),
-    .io_out_cxl_axi_ar_payload_burst(), // ignored since len is always 0
+    .io_out_cxl_axi_ar_payload_burst(briey_arburst),
     .io_out_cxl_axi_r_valid(briey_rvalid),
     .io_out_cxl_axi_r_ready(briey_rready),
     .io_out_cxl_axi_r_payload_data(briey_rdata),
     .io_out_cxl_axi_r_payload_id(briey_rid),
     .io_out_cxl_axi_r_payload_resp(briey_rresp),
     .io_out_cxl_axi_r_payload_last(briey_rlast),
-
-    // write riscv ram interface (for loading binarys)
-    .io_out_reg_axi_aw_valid(io_out_reg_axi_aw_valid),
-    .io_out_reg_axi_aw_ready(io_out_reg_axi_aw_ready),
-    .io_out_reg_axi_aw_payload_addr(io_out_reg_axi_aw_payload_addr),
-    .io_out_reg_axi_w_valid(io_out_reg_axi_w_valid),
-    .io_out_reg_axi_w_ready(io_out_reg_axi_w_ready),
-    .io_out_reg_axi_w_payload_data(io_out_reg_axi_w_payload_data),
-    .io_out_reg_axi_w_payload_strb(io_out_reg_axi_w_payload_strb),
-    .io_out_reg_axi_b_valid(io_out_reg_axi_b_valid),
-    .io_out_reg_axi_b_ready(io_out_reg_axi_b_ready),
-    .io_out_reg_axi_b_payload_resp(io_out_reg_axi_b_payload_resp),
-    .io_out_reg_axi_ar_valid(io_out_reg_axi_ar_valid),
-    .io_out_reg_axi_ar_ready(io_out_reg_axi_ar_ready),
-    .io_out_reg_axi_ar_payload_addr(io_out_reg_axi_ar_payload_addr),
-    .io_out_reg_axi_r_valid(io_out_reg_axi_r_valid),
-    .io_out_reg_axi_r_ready(io_out_reg_axi_r_ready),
-    .io_out_reg_axi_r_payload_data(io_out_reg_axi_r_payload_data),
-    .io_out_reg_axi_r_payload_resp(io_out_reg_axi_r_payload_resp),
 
     // write riscv ram interface (for loading binarys)
     .io_in_ram_io_arw_valid(program_load_aw_valid),
@@ -687,9 +681,9 @@ module Briey_Wrap (
     .io_in_ram_io_w_payload_last(1'b1),
     .io_in_ram_io_b_ready(1'b1),
     .io_in_ram_io_r_ready(1'b1),
+
     .io_in_enable_ram_reload(program_load_en)
   );
-
 
   cxl_briey_axi cxl_briey_axi_instance (
     .clk(axi4_mm_clk),
@@ -721,6 +715,7 @@ module Briey_Wrap (
     .briey_aruser(briey_aruser),
     .briey_arvalid(briey_arvalid),
     .briey_arready(briey_arready),
+    .briey_arburst(briey_arburst),
     .briey_rid(briey_rid),
     .briey_rdata(briey_rdata),
     .briey_rresp(briey_rresp),
@@ -774,4 +769,20 @@ module Briey_Wrap (
     .rready(rready)
   );
 
+
+  always_ff @(posedge axi4_mm_clk) begin
+    if(!axi4_mm_rst_n || ctrl_clear_counter) begin
+      DEBUG_axi_ar <= 0;
+      DEBUG_axi_r <= 0;
+      DEBUG_axi_w <= 0;
+      DEBUG_axi_aw <= 0;
+      DEBUG_axi_b <= 0;
+    end else begin
+      if(arvalid && arready) DEBUG_axi_ar <= DEBUG_axi_ar + 1;
+      if(rvalid && rready) DEBUG_axi_r <= DEBUG_axi_r + 1;
+      if(awvalid && awready) DEBUG_axi_aw <= DEBUG_axi_aw + 1;
+      if(wvalid && wready) DEBUG_axi_w <= DEBUG_axi_w + 1;
+      if(bvalid && bready) DEBUG_axi_b <= DEBUG_axi_b + 1;
+    end
+  end
 endmodule
