@@ -163,6 +163,52 @@ module Briey_axil_cfg (
   assign program_load_w_payload_strb = 64'hFFFFFFFFFFFFFFFF;
 endmodule
 
+module axi_id_wait(
+    input clk,
+    input rstn,
+
+    input enable,
+
+    input slave_aXvalid,
+    input slave_aXid,
+    output slave_aXready,
+
+    output slave_Xvalid,
+    output slave_Xid,
+    input slave_Xready,
+
+    output master_aXvalid,
+    output [11:0] master_aXid,
+    input master_aXready,
+
+    input master_Xvalid,
+    input [11:0] master_Xid,
+    output master_Xready
+);
+    logic [31:0] taken_id;
+    logic [4 :0] curr_id;
+
+    always_ff @(posedge clk) begin
+        if(!rstn) taken_id <= 0;
+        else begin
+            if(master_Xready  && master_Xvalid) taken_id[master_Xid[4:0]] <= 0;
+            if(master_aXready && master_aXvalid) taken_id[curr_id] <= 1;
+        end
+    end
+
+    assign curr_id = slave_aXid;
+
+    assign slave_aXready = master_aXready && !taken_id[curr_id] && enable;
+
+    assign master_aXvalid = slave_aXvalid && !taken_id[curr_id] && enable;
+    assign master_aXid[4:0] = curr_id;
+    assign master_aXid[11:5] = 0;
+
+    assign master_Xready = slave_Xready && enable;
+    assign slave_Xvalid = master_Xvalid && enable;
+    assign slave_Xid = master_Xid;
+endmodule
+
 module Briey_Wrap (
   // Clocks
   input logic  axi4_mm_clk, 
@@ -311,44 +357,64 @@ module Briey_Wrap (
   assign awaddr = physical_address_base + riscv_axi_awaddr; // byte address
   assign araddr = physical_address_base + riscv_axi_araddr; // byte address
 
-  logic _awvalid, _wvalid, _bvalid, _arvalid, _rvalid;
-  logic _awready, _wready, _bready, _arready, _rready;
+  logic briey_awvalid, briey_awready, briey_awid;
+  logic briey_wvalid, briey_wready;
+  logic briey_bvalid, briey_bready, briey_bid;
 
-  assign awvalid = _awvalid && enable;
-  assign wvalid = _wvalid && enable;
-  assign _bvalid = bvalid && enable;
-  assign arvalid = _arvalid && enable;
-  assign _rvalid = rvalid && enable;
+  logic briey_arvalid, briey_arready, briey_arid;
+  logic briey_rvalid, briey_rready, briey_rid;
 
-  assign _awready = awready && enable;
-  assign _wready = wready && enable;
-  assign bready = _bready && enable;
-  assign _arready = arready && enable;
-  assign rready = _rready && enable;
+  assign wvalid = briey_wvalid && enable;
+  assign briey_wready = wready && enable;
 
-  // wire          io_out_reg_axi_aw_valid;
-  // wire          io_out_reg_axi_aw_ready;
-  // wire [9:0]    io_out_reg_axi_aw_payload_addr;
+  axi_id_wait axi_id_wait_inst_WRITE (
+    .clk(axi4_mm_clk),
+    .rstn(axi4_mm_rst_n),
 
-  // wire          io_out_reg_axi_ar_valid;
-  // wire          io_out_reg_axi_ar_ready;
-  // wire [9:0]    io_out_reg_axi_ar_payload_addr;
+    .enable(enable),
 
-  // wire          io_out_reg_axi_w_valid;
-  // wire          io_out_reg_axi_w_ready;
-  // wire [511:0]  io_out_reg_axi_w_payload_data;
-  // wire [63:0]   io_out_reg_axi_w_payload_strb;
-
-  // wire          io_out_reg_axi_b_valid;
-  // wire          io_out_reg_axi_b_ready;
-  // wire [1:0]    io_out_reg_axi_b_payload_resp;
-
-  // wire          io_out_reg_axi_r_valid;
-  // wire          io_out_reg_axi_r_ready;
-  // wire [511:0]  io_out_reg_axi_r_payload_data;
-  // wire [1:0]    io_out_reg_axi_r_payload_resp;
+    .slave_aXvalid(briey_awvalid),
+    .slave_aXid(briey_awid),
+    .slave_aXready(briey_awready),
+    
+    .slave_Xvalid(briey_bvalid),
+    .slave_Xid(briey_bid),
+    .slave_Xready(briey_bready),
+    
+    
+    .master_aXvalid(awvalid),
+    .master_aXid(awid),
+    .master_aXready(awready),
+    
+    .master_Xvalid(bvalid),
+    .master_Xid(bid),
+    .master_Xready(bready)
+  );
 
 
+  axi_id_wait axi_id_wait_inst_READ (
+    .clk(axi4_mm_clk),
+    .rstn(axi4_mm_rst_n),
+
+    .enable(enable),
+    
+    .slave_aXvalid(briey_arvalid),
+    .slave_aXid(briey_arid),
+    .slave_aXready(briey_arready),
+    
+    .slave_Xvalid(briey_rvalid),
+    .slave_Xid(briey_rid),
+    .slave_Xready(briey_rready),
+    
+    
+    .master_aXvalid(arvalid),
+    .master_aXid(arid),
+    .master_aXready(arready),
+    
+    .master_Xvalid(rvalid),
+    .master_Xid(rid),
+    .master_Xready(rready)
+  );
 
   Briey briey_inst (
     .io_asyncReset (!axi4_mm_rst_n | core_rst),
@@ -362,56 +428,37 @@ module Briey_Wrap (
     .io_coreInterrupt (1'b0),
 
 
-    .io_out_cxl_axi_aw_valid(_awvalid),
-    .io_out_cxl_axi_aw_ready(_awready),
+    .io_out_cxl_axi_aw_valid(briey_awvalid),
+    .io_out_cxl_axi_aw_ready(briey_awready),
     .io_out_cxl_axi_aw_payload_addr(riscv_axi_awaddr), // RISVcore address range 14bits 
-    .io_out_cxl_axi_aw_payload_id(awid),
+    .io_out_cxl_axi_aw_payload_id(briey_awid),
     .io_out_cxl_axi_aw_payload_len(awlen), // TODO: change len width based on Briey
     .io_out_cxl_axi_aw_payload_size(awsize),
     .io_out_cxl_axi_aw_payload_burst(), // ignored since len is always 0
 
-    .io_out_cxl_axi_w_valid(_wvalid),
-    .io_out_cxl_axi_w_ready(_wready),
+    .io_out_cxl_axi_w_valid(briey_wvalid),
+    .io_out_cxl_axi_w_ready(briey_wready),
     .io_out_cxl_axi_w_payload_data(wdata),
     .io_out_cxl_axi_w_payload_strb(wstrb),
     .io_out_cxl_axi_w_payload_last(wlast),
-    .io_out_cxl_axi_b_valid(_bvalid),
-    .io_out_cxl_axi_b_ready(_bready),
-    .io_out_cxl_axi_b_payload_id(bid), 
+    .io_out_cxl_axi_b_valid(briey_bvalid),
+    .io_out_cxl_axi_b_ready(briey_bready),
+    .io_out_cxl_axi_b_payload_id(briey_bid), 
     .io_out_cxl_axi_b_payload_resp(bresp),
 
-    .io_out_cxl_axi_ar_valid(_arvalid),
-    .io_out_cxl_axi_ar_ready(_arready),
+    .io_out_cxl_axi_ar_valid(briey_arvalid),
+    .io_out_cxl_axi_ar_ready(briey_arready),
     .io_out_cxl_axi_ar_payload_addr(riscv_axi_araddr),
-    .io_out_cxl_axi_ar_payload_id(arid), 
+    .io_out_cxl_axi_ar_payload_id(briey_arid), 
     .io_out_cxl_axi_ar_payload_len(arlen), // TODO: change len width based on Briey
     .io_out_cxl_axi_ar_payload_size(arsize),
     .io_out_cxl_axi_ar_payload_burst(), // ignored since len is always 0
-    .io_out_cxl_axi_r_valid(_rvalid),
-    .io_out_cxl_axi_r_ready(_rready),
+    .io_out_cxl_axi_r_valid(briey_rvalid),
+    .io_out_cxl_axi_r_ready(briey_rready),
     .io_out_cxl_axi_r_payload_data(rdata),
-    .io_out_cxl_axi_r_payload_id(rid),
+    .io_out_cxl_axi_r_payload_id(briey_rid),
     .io_out_cxl_axi_r_payload_resp(rresp),
     .io_out_cxl_axi_r_payload_last(rlast),
-
-    // write riscv ram interface (for loading binarys)
-    // .io_out_reg_axi_aw_valid(io_out_reg_axi_aw_valid),
-    // .io_out_reg_axi_aw_ready(io_out_reg_axi_aw_ready),
-    // .io_out_reg_axi_aw_payload_addr(io_out_reg_axi_aw_payload_addr),
-    // .io_out_reg_axi_w_valid(io_out_reg_axi_w_valid),
-    // .io_out_reg_axi_w_ready(io_out_reg_axi_w_ready),
-    // .io_out_reg_axi_w_payload_data(io_out_reg_axi_w_payload_data),
-    // .io_out_reg_axi_w_payload_strb(io_out_reg_axi_w_payload_strb),
-    // .io_out_reg_axi_b_valid(io_out_reg_axi_b_valid),
-    // .io_out_reg_axi_b_ready(io_out_reg_axi_b_ready),
-    // .io_out_reg_axi_b_payload_resp(io_out_reg_axi_b_payload_resp),
-    // .io_out_reg_axi_ar_valid(io_out_reg_axi_ar_valid),
-    // .io_out_reg_axi_ar_ready(io_out_reg_axi_ar_ready),
-    // .io_out_reg_axi_ar_payload_addr(io_out_reg_axi_ar_payload_addr),
-    // .io_out_reg_axi_r_valid(io_out_reg_axi_r_valid),
-    // .io_out_reg_axi_r_ready(io_out_reg_axi_r_ready),
-    // .io_out_reg_axi_r_payload_data(io_out_reg_axi_r_payload_data),
-    // .io_out_reg_axi_r_payload_resp(io_out_reg_axi_r_payload_resp),
 
     // write riscv ram interface (for loading binarys)
     .io_in_ram_io_arw_valid(program_load_aw_valid),
