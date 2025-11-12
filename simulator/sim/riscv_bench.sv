@@ -160,51 +160,51 @@ module riscv_bench;
     );
 
 
-    axi_ram #(
-        .DATA_WIDTH(512),
-        .ADDR_WIDTH(64),
-        .PIPELINE_OUTPUT(0),
-        .ID_WIDTH(12)
-    )
-    axi_ram_inst (
-        .clk(clk),
-        .rst(rst),
-        .s_axi_awid(awid),
-        .s_axi_awaddr(awaddr),
-        .s_axi_awlen(awlen),
-        .s_axi_awsize(awsize),
-        .s_axi_awburst(awburst),
-        .s_axi_awlock(awlock),
-        .s_axi_awcache(awcache),
-        .s_axi_awprot(awprot),
-        .s_axi_awvalid(awvalid),
-        .s_axi_awready(awready),
-        .s_axi_wdata(wdata),
-        .s_axi_wstrb(wstrb),
-        .s_axi_wlast(wlast),
-        .s_axi_wvalid(wvalid),
-        .s_axi_wready(wready),
-        .s_axi_bid(bid),
-        .s_axi_bresp(bresp),
-        .s_axi_bvalid(bvalid),
-        .s_axi_bready(bready),
-        .s_axi_arid(arid),
-        .s_axi_araddr(araddr),
-        .s_axi_arlen(arlen),
-        .s_axi_arsize(arsize),
-        .s_axi_arburst(arburst),
-        .s_axi_arlock(arlock),
-        .s_axi_arcache(arcache),
-        .s_axi_arprot(arprot),
-        .s_axi_arvalid(arvalid),
-        .s_axi_arready(arready),
-        .s_axi_rid(rid),
-        .s_axi_rdata(rdata),
-        .s_axi_rresp(rresp),
-        .s_axi_rlast(rlast),
-        .s_axi_rvalid(rvalid),
-        .s_axi_rready(rready)
-    );
+    // axi_ram #(
+    //     .DATA_WIDTH(512),
+    //     .ADDR_WIDTH(64),
+    //     .PIPELINE_OUTPUT(0),
+    //     .ID_WIDTH(12)
+    // )
+    // axi_ram_inst (
+    //     .clk(clk),
+    //     .rst(rst),
+    //     .s_axi_awid(awid),
+    //     .s_axi_awaddr(awaddr),
+    //     .s_axi_awlen(awlen),
+    //     .s_axi_awsize(awsize),
+    //     .s_axi_awburst(awburst),
+    //     .s_axi_awlock(awlock),
+    //     .s_axi_awcache(awcache),
+    //     .s_axi_awprot(awprot),
+    //     .s_axi_awvalid(awvalid),
+    //     .s_axi_awready(awready),
+    //     .s_axi_wdata(wdata),
+    //     .s_axi_wstrb(wstrb),
+    //     .s_axi_wlast(wlast),
+    //     .s_axi_wvalid(wvalid),
+    //     .s_axi_wready(wready),
+    //     .s_axi_bid(bid),
+    //     .s_axi_bresp(bresp),
+    //     .s_axi_bvalid(bvalid),
+    //     .s_axi_bready(bready),
+    //     .s_axi_arid(arid),
+    //     .s_axi_araddr(araddr),
+    //     .s_axi_arlen(arlen),
+    //     .s_axi_arsize(arsize),
+    //     .s_axi_arburst(arburst),
+    //     .s_axi_arlock(arlock),
+    //     .s_axi_arcache(arcache),
+    //     .s_axi_arprot(arprot),
+    //     .s_axi_arvalid(arvalid),
+    //     .s_axi_arready(arready),
+    //     .s_axi_rid(rid),
+    //     .s_axi_rdata(rdata),
+    //     .s_axi_rresp(rresp),
+    //     .s_axi_rlast(rlast),
+    //     .s_axi_rvalid(rvalid),
+    //     .s_axi_rready(rready)
+    // );
 
 
     initial begin
@@ -227,6 +227,10 @@ module riscv_bench;
 
             if(wready && wvalid) begin
                 $display("[%10t] wdata  %016x wstrb %016x wlast %0d", $time, wdata[63:0], wstrb, wlast);
+            end
+
+            if(bready && bvalid) begin
+                $display("[%10t] bvalid", $time);
             end
 
             if(arready && arvalid) begin
@@ -281,20 +285,21 @@ module riscv_bench;
         repeat(1000) @(negedge clk);
         $display("Done reset");
 
-        // awready = 1;
-        // wready = 1;
-        // arready = 1;
+        awready = 1;
+        wready = 1;
+        arready = 1;
 
         rst = 0;
         // axil_WR('h20, 'h4000000);
         axil_WR('h40, 1);
+        axil_WR('h10, 1);
 
         repeat(10000) @(negedge clk);
         $finish;
     end
 
-    mailbox m = new();
-    mailbox m_rid = new();
+    mailbox #(logic[11:0]) m = new();
+    mailbox #(logic[11:0]) m_rid = new();
     initial begin
         while(1) begin
             @(posedge clk);
@@ -310,50 +315,52 @@ module riscv_bench;
     end
 
 
-    // initial begin
-    //     logic [11:0] id;
-    //     bvalid = 0;
-    //     bid = 0;
-    //     while(1) begin
-    //         @(negedge clk);
-    //         if(m.try_get(bid)) begin
-    //             @(negedge clk);
-    //             bvalid = 1;
+    initial begin
+        logic [11:0] id;
+        bvalid = 0;
+        bid = 0;
+        while(1) begin
+            @(negedge clk);
+            if(m.try_get(bid)) begin
+                @(negedge clk);
+                for(int i = 0 ; i < 1000; i++) @(negedge clk);
+                bvalid = 1;
                 
-    //             while(1) begin
-    //                 @(posedge clk);
-    //                 if(bready) break;
-    //             end
-    //             @(negedge clk);
-    //             bvalid = 0;
-    //         end
-    //     end
-    // end
+                while(1) begin
+                    @(posedge clk);
+                    if(bready) break;
+                end
+                @(negedge clk);
+                bvalid = 0;
+            end
+        end
+    end
 
 
-    // initial begin
-    //     logic [11:0] id;
-    //     rvalid = 0;
+    initial begin
+        logic [11:0] id;
+        rvalid = 0;
                 
-    //     rid = 0;
-    //     rdata = 0;
-    //     rresp = 0;
-    //     rlast = 1;
-    //     ruser = 0;
+        rid = 0;
+        rdata = 0;
+        rresp = 0;
+        rlast = 1;
+        ruser = 0;
 
-    //     while(1) begin
-    //         @(negedge clk);
-    //         if(m_rid.try_get(rid)) begin
-    //             @(negedge clk);
-    //             rvalid = 1;
-    //             while(1) begin
-    //                 @(posedge clk);
-    //                 if(bready) break;
-    //             end
-    //             @(negedge clk);
-    //             rvalid = 0;
-    //         end
-    //     end
-    // end
+        while(1) begin
+            @(negedge clk);
+            if(m_rid.try_get(rid)) begin
+                @(negedge clk);
+                for(int i = 0 ; i < 1000; i++) @(negedge clk);
+                rvalid = 1;
+                while(1) begin
+                    @(posedge clk);
+                    if(bready) break;
+                end
+                @(negedge clk);
+                rvalid = 0;
+            end
+        end
+    end
 endmodule
 
