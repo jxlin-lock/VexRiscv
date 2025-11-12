@@ -173,6 +173,9 @@ module axi_id_wait(
     input slave_aXid,
     output slave_aXready,
 
+    input slave_WVALID,
+    output slave_WREADY,
+
     output slave_Xvalid,
     output slave_Xid,
     input slave_Xready,
@@ -180,6 +183,9 @@ module axi_id_wait(
     output master_aXvalid,
     output [11:0] master_aXid,
     input master_aXready,
+
+    output master_WVALID,
+    input master_WREADY,
 
     input master_Xvalid,
     input [11:0] master_Xid,
@@ -207,6 +213,10 @@ module axi_id_wait(
     assign master_Xready = slave_Xready && enable;
     assign slave_Xvalid = master_Xvalid && enable;
     assign slave_Xid = master_Xid;
+
+
+    assign master_WVALID = slave_WVALID && !taken_id[curr_id] &&  enable;
+    assign slave_WREADY = master_WREADY && !taken_id[curr_id] &&  enable;
 endmodule
 
 module Briey_Wrap (
@@ -364,8 +374,8 @@ module Briey_Wrap (
   logic briey_arvalid, briey_arready, briey_arid;
   logic briey_rvalid, briey_rready, briey_rid;
 
-  assign wvalid = briey_wvalid && enable;
-  assign briey_wready = wready && enable;
+  // assign wvalid = briey_wvalid && enable;
+  // assign briey_wready = wready && enable;
 
   axi_id_wait axi_id_wait_inst_WRITE (
     .clk(axi4_mm_clk),
@@ -377,6 +387,9 @@ module Briey_Wrap (
     .slave_aXid(briey_awid),
     .slave_aXready(briey_awready),
     
+    .slave_WREADY(briey_wready),
+    .slave_WVALID(briey_wvalid),
+
     .slave_Xvalid(briey_bvalid),
     .slave_Xid(briey_bid),
     .slave_Xready(briey_bready),
@@ -386,6 +399,9 @@ module Briey_Wrap (
     .master_aXid(awid),
     .master_aXready(awready),
     
+    .master_WREADY(wready),
+    .master_WVALID(wvalid),
+
     .master_Xvalid(bvalid),
     .master_Xid(bid),
     .master_Xready(bready)
